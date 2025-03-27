@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: flash-francais-api
+    env: python
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: flash-francais-db
+          property: connectionString
+      - key: ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.13.2
+
+databases:
+  - name: flash-francais-db
+    databaseName: flash_francais
+    plan: free
