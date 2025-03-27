@@ -95,3 +95,7 @@ def delete_flashcard(flashcard_id: int, db: Session = Depends(get_db)):
     if db_flashcard is None:
         raise HTTPException(status_code=404, detail="Flashcard non trouvée")
     return db_flashcard
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=10000)
