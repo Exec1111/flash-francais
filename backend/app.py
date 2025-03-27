@@ -35,10 +35,10 @@ app = FastAPI(
     openapi_url=settings.OPENAPI_URL
 )
 
-# Configuration CORS pour permettre les requêtes depuis le frontend
+# Configuration CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origins=[settings.BACKEND_CORS_ORIGINS],  # Convertir la chaîne en liste
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
