@@ -4,7 +4,7 @@ services:
     env: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: gunicorn app:app -c gunicorn_config.py
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -24,6 +24,8 @@ services:
         value: /openapi.json
       - key: SECRET_KEY
         sync: false
+      - key: PORT
+        value: 10000
 
 databases:
   - name: flash-francais-db
