@@ -6,7 +6,7 @@ services:
       cd backend
       pip install -r requirements.txt
       cp .env.production .env
-    startCommand: cd backend && python app.py
+    startCommand: python /opt/render/project/src/backend/app.py
     envVars:
       - key: DATABASE_URL
         fromDatabase:
