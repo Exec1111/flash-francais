@@ -2,11 +2,39 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
+import logging
+import sys
+import os
 
-from database import get_db
+from database import get_db, engine, Base
 import crud.flashcard as crud
 from schemas.flashcard import Flashcard, FlashcardCreate
 from config import get_settings, Settings
+from models import Flashcard as FlashcardModel  # Import pour s'assurer que le modèle est enregistré
+
+# Configuration du logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Initialisation de la base de données
+def init_db():
+    """
+    Initialise la base de données en créant les tables nécessaires.
+    """
+    try:
+        logger.info("Initialisation de la base de données...")
+        # Créer les tables directement avec SQLAlchemy
+        Base.metadata.create_all(bind=engine)
+        logger.info("Tables créées avec succès.")
+        return True
+    except Exception as e:
+        logger.error(f"Erreur lors de l'initialisation de la base de données: {e}")
+        return False
+
+# Initialiser la base de données au démarrage
+if os.environ.get("RENDER") == "true":
+    logger.info("Environnement Render détecté, initialisation de la base de données...")
+    init_db()
 
 settings = get_settings()
 
@@ -46,7 +74,7 @@ app.add_middleware(
 
 @app.get("/", tags=["root"])
 async def root():
-    return {"message": "Bienvenue sur l'API Flash Français!"}
+    return {"message": "Bienvenue sur l'API Flash Français"}
 
 @app.post("/flashcards/", response_model=Flashcard, tags=["flashcards"])
 def create_flashcard(flashcard: FlashcardCreate, db: Session = Depends(get_db)):
@@ -81,20 +109,20 @@ def update_flashcard(flashcard_id: int, flashcard: FlashcardCreate, db: Session 
     """
     Mettre à jour une flashcard existante.
     """
-    db_flashcard = crud.update_flashcard(db, flashcard_id=flashcard_id, flashcard=flashcard)
+    db_flashcard = crud.get_flashcard(db, flashcard_id=flashcard_id)
     if db_flashcard is None:
         raise HTTPException(status_code=404, detail="Flashcard non trouvée")
-    return db_flashcard
+    return crud.update_flashcard(db=db, flashcard_id=flashcard_id, flashcard=flashcard)
 
 @app.delete("/flashcards/{flashcard_id}", response_model=Flashcard, tags=["flashcards"])
 def delete_flashcard(flashcard_id: int, db: Session = Depends(get_db)):
     """
     Supprimer une flashcard.
     """
-    db_flashcard = crud.delete_flashcard(db, flashcard_id=flashcard_id)
+    db_flashcard = crud.get_flashcard(db, flashcard_id=flashcard_id)
     if db_flashcard is None:
         raise HTTPException(status_code=404, detail="Flashcard non trouvée")
-    return db_flashcard
+    return crud.delete_flashcard(db=db, flashcard_id=flashcard_id)
 
 if __name__ == "__main__":
     import uvicorn
