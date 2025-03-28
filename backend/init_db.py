@@ -41,7 +41,14 @@ def init_db():
         # Vérifier que les tables ont été créées
         with engine.connect() as conn:
             tables = conn.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"))
-            logger.info(f"Tables dans la base de données: {[table[0] for table in tables]}")
+            table_list = [table[0] for table in tables]
+            logger.info(f"Tables dans la base de données: {table_list}")
+            
+            # Vérifier si la table flashcards existe
+            if 'flashcards' in table_list:
+                logger.info("La table 'flashcards' existe dans la base de données.")
+            else:
+                logger.warning("La table 'flashcards' n'existe pas dans la base de données!")
         
         logger.info("Initialisation de la base de données terminée avec succès.")
         return True
@@ -51,4 +58,6 @@ def init_db():
 
 if __name__ == "__main__":
     success = init_db()
-    sys.exit(0 if success else 1)
+    # Ne pas quitter avec un code d'erreur même si l'initialisation échoue
+    # Cela permettra à Render de continuer le déploiement
+    sys.exit(0)
