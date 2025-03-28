@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # Configuration de sécurité
     BACKEND_CORS_ORIGINS: str = "http://localhost:3000"  # Frontend URL
     
-    # Swagger UI (désactivé en production)
+    # Swagger UI (peut être désactivé en production via .env.production)
     DOCS_URL: str | None = "/docs"
     REDOC_URL: str | None = "/redoc"
     OPENAPI_URL: str | None = "/openapi.json"
@@ -39,11 +39,8 @@ def get_settings() -> Settings:
         render_db_url = os.environ.get("DATABASE_URL")
         if render_db_url:
             settings.DATABASE_URL = render_db_url
-            
-        # Désactiver la documentation en production
-        if settings.ENV == "production":
-            settings.DOCS_URL = None
-            settings.REDOC_URL = None
-            settings.OPENAPI_URL = None
+        
+        # Les paramètres de documentation sont déjà définis par .env.production
+        # Nous ne les modifions pas ici pour éviter les conflits
     
     return settings
