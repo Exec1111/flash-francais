@@ -6,7 +6,7 @@ services:
     buildCommand: >
       pip install -r requirements.txt &&
       cp .env.production .env &&
-      alembic upgrade head
+      python -m alembic upgrade head
     startCommand: python app.py
     envVars:
       - key: DATABASE_URL
@@ -19,6 +19,8 @@ services:
         sync: false
       - key: PORT
         value: 10000
+      - key: RENDER
+        value: true
 
 databases:
   - name: flash-francais-db
