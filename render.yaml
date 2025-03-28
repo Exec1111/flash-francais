@@ -6,7 +6,7 @@ services:
     buildCommand: >
       pip install -r requirements.txt &&
       cp .env.production .env &&
-      python -m alembic upgrade head
+      python init_db.py
     startCommand: python app.py
     envVars:
       - key: DATABASE_URL
