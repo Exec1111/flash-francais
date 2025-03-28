@@ -19,5 +19,5 @@ services:
 
 databases:
   - name: flash-francais-db
-    databaseName: flash_francais
+    databaseName: flashfrdb
     plan: free
