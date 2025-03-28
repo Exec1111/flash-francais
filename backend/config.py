@@ -1,13 +1,14 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 from typing import List
+import os
 
 class Settings(BaseSettings):
     # Environnement (development, production)
     ENV: str = "development"
     
     # Configuration de la base de données
-    DATABASE_URL: str
+    DATABASE_URL: str = ""
     
     # Configuration de l'API
     API_V1_PREFIX: str = "/api/v1"
@@ -27,4 +28,22 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    
+    # Vérifier si nous sommes sur Render
+    if os.environ.get("RENDER") == "true":
+        # Forcer le mode production
+        settings.ENV = "production"
+        
+        # Récupérer l'URL de la base de données directement depuis les variables d'environnement
+        render_db_url = os.environ.get("DATABASE_URL")
+        if render_db_url:
+            settings.DATABASE_URL = render_db_url
+            
+        # Désactiver la documentation en production
+        if settings.ENV == "production":
+            settings.DOCS_URL = None
+            settings.REDOC_URL = None
+            settings.OPENAPI_URL = None
+    
+    return settings
