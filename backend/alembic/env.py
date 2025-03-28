@@ -16,6 +16,7 @@ from database import SQLALCHEMY_DATABASE_URL
 # access to the values within the .ini file in use.
 config = context.config
 
+# Remplacer l'URL de connexion par celle définie dans notre application
 config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL)
 
 # Interpret the config file for Python logging.
@@ -25,6 +26,8 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
+# from myapp import mymodel
+# target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

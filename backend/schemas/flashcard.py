@@ -6,6 +6,7 @@ class FlashcardBase(BaseModel):
     french_word: str
     english_translation: str
     example_sentence: Optional[str] = None
+    difficulty: Optional[int] = 1
 
 class FlashcardCreate(FlashcardBase):
     pass

@@ -26,15 +26,29 @@ if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
 
 print(f"Connexion à la base de données : {SQLALCHEMY_DATABASE_URL}")
 
+# Configuration des paramètres de connexion en fonction de l'environnement
+connect_args = {}
+if settings.ENV == "production":
+    # En production (Render), on utilise SSL
+    connect_args["sslmode"] = "require"
+    pool_size = 5
+    max_overflow = 2
+    pool_timeout = 30
+    pool_recycle = 1800
+else:
+    # En développement local, pas de SSL
+    pool_size = 5
+    max_overflow = 2
+    pool_timeout = 30
+    pool_recycle = 1800
+
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    pool_size=5,
-    max_overflow=2,
-    pool_timeout=30,
-    pool_recycle=1800,
-    connect_args={
-        "sslmode": "require"
-    }
+    pool_size=pool_size,
+    max_overflow=max_overflow,
+    pool_timeout=pool_timeout,
+    pool_recycle=pool_recycle,
+    connect_args=connect_args
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

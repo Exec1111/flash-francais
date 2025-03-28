@@ -3,7 +3,10 @@ services:
     name: flash-francais-api
     env: python
     rootDir: backend
-    buildCommand: pip install -r requirements.txt && cp .env.production .env
+    buildCommand: >
+      pip install -r requirements.txt &&
+      cp .env.production .env &&
+      alembic upgrade head
     startCommand: python app.py
     envVars:
       - key: DATABASE_URL
