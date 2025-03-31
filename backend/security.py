@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -17,16 +16,7 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 # Configuration de la sécurité
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-def verify_password(plain_password, hashed_password):
-    """Vérifie si le mot de passe en clair correspond au mot de passe haché."""
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
-    """Génère un hash pour le mot de passe."""
-    return pwd_context.hash(password)
 
 def authenticate_user(db: Session, email: str, password: str):
     """Authentifie un utilisateur en vérifiant son email et son mot de passe."""
@@ -37,7 +27,7 @@ def authenticate_user(db: Session, email: str, password: str):
         return False
     
     logger.info(f"Utilisateur trouvé: {user.email}. Vérification du mot de passe.")
-    if not verify_password(password, user.hashed_password):
+    if not user.check_password(password):
         logger.warning(f"Mot de passe incorrect pour l'email: {email}")
         return False
     

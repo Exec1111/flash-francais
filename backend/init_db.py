@@ -11,7 +11,7 @@ from alembic.config import Config
 from alembic import command
 from database import engine, Base, SessionLocal
 from models.user import User, UserRole  # Import direct du modèle User
-from security import get_password_hash
+from hashing import get_password_hash  # Mise à jour de l'importation
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
