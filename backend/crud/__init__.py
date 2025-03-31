@@ -1,3 +1,4 @@
+# Exposer les fonctions du module user
 from crud.user import (
     get_user,
     get_user_by_email,
