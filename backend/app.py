@@ -4,10 +4,12 @@ from sqlalchemy.orm import Session
 from typing import List
 import logging
 
-from database import get_db
-import crud.flashcard as crud
-from schemas.flashcard import Flashcard, FlashcardCreate
+from database import get_db, engine, Base
 from config import get_settings, Settings
+from routers import auth_router
+
+# Création des tables dans la base de données
+Base.metadata.create_all(bind=engine)
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
@@ -18,21 +20,19 @@ settings = get_settings()
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="""
-    API pour l'application Flash Français. Permet de gérer les flashcards pour l'apprentissage du français.
+    API pour l'application Flash Français. Permet de gérer les utilisateurs et l'authentification.
     
-    ## Flashcards
+    ## Authentification
     
-    Vous pouvez :
-    * Créer des flashcards
-    * Lire les flashcards
-    * Mettre à jour les flashcards
-    * Supprimer les flashcards
+    * Inscription d'un nouvel utilisateur
+    * Connexion pour obtenir un token JWT
+    * Récupération des informations de l'utilisateur connecté
     """,
     version="1.0.0",
     openapi_tags=[
         {
-            "name": "flashcards",
-            "description": "Opérations sur les flashcards"
+            "name": "auth",
+            "description": "Opérations d'authentification"
         }
     ],
     docs_url=settings.DOCS_URL,
@@ -41,65 +41,31 @@ app = FastAPI(
 )
 
 # Configuration CORS
+origins = [
+    "http://localhost:3000",  # Frontend React
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.BACKEND_CORS_ORIGINS],  # Convertir la chaîne en liste
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Inclusion des routes d'authentification
+app.include_router(
+    auth_router,
+    prefix=f"{settings.API_V1_PREFIX}/auth",
+    tags=["auth"]
+)
+
 @app.get("/", tags=["root"])
 def root():
     return {"message": "Bienvenue sur l'API Flash Français"}
-
-@app.post("/flashcards/", response_model=Flashcard, tags=["flashcards"])
-def create_flashcard(flashcard: FlashcardCreate, db: Session = Depends(get_db)):
-    """
-    Créer une nouvelle flashcard avec :
-    - **french_word**: le mot en français
-    - **english_translation**: la traduction en anglais
-    - **example_sentence**: une phrase d'exemple (optionnel)
-    """
-    return crud.create_flashcard(db=db, flashcard=flashcard)
-
-@app.get("/flashcards/", response_model=List[Flashcard], tags=["flashcards"])
-def read_flashcards(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """
-    Récupérer la liste des flashcards avec pagination.
-    """
-    flashcards = crud.get_flashcards(db, skip=skip, limit=limit)
-    return flashcards
-
-@app.get("/flashcards/{flashcard_id}", response_model=Flashcard, tags=["flashcards"])
-def read_flashcard(flashcard_id: int, db: Session = Depends(get_db)):
-    """
-    Récupérer une flashcard spécifique par son ID.
-    """
-    db_flashcard = crud.get_flashcard(db, flashcard_id=flashcard_id)
-    if db_flashcard is None:
-        raise HTTPException(status_code=404, detail="Flashcard non trouvée")
-    return db_flashcard
-
-@app.put("/flashcards/{flashcard_id}", response_model=Flashcard, tags=["flashcards"])
-def update_flashcard(flashcard_id: int, flashcard: FlashcardCreate, db: Session = Depends(get_db)):
-    """
-    Mettre à jour une flashcard existante.
-    """
-    db_flashcard = crud.get_flashcard(db, flashcard_id=flashcard_id)
-    if db_flashcard is None:
-        raise HTTPException(status_code=404, detail="Flashcard non trouvée")
-    return crud.update_flashcard(db=db, flashcard_id=flashcard_id, flashcard=flashcard)
-
-@app.delete("/flashcards/{flashcard_id}", response_model=Flashcard, tags=["flashcards"])
-def delete_flashcard(flashcard_id: int, db: Session = Depends(get_db)):
-    """
-    Supprimer une flashcard.
-    """
-    db_flashcard = crud.get_flashcard(db, flashcard_id=flashcard_id)
-    if db_flashcard is None:
-        raise HTTPException(status_code=404, detail="Flashcard non trouvée")
-    return crud.delete_flashcard(db=db, flashcard_id=flashcard_id)
 
 if __name__ == "__main__":
     import uvicorn
