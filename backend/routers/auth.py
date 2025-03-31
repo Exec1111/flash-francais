@@ -4,11 +4,12 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 from typing import Any
 
-from database import get_db
-import crud.user as crud
-from schemas.user import UserCreate, UserResponse, Token
-from security import authenticate_user, create_access_token, get_current_active_user
-from config import get_settings
+from backend.database import get_db
+import backend.crud.user as crud
+from backend.schemas.user import UserCreate, UserResponse, Token
+from backend.security import authenticate_user, create_access_token, get_current_active_user
+from backend.config import get_settings
+import logging
 
 settings = get_settings()
 router = APIRouter()
