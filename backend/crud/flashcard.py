@@ -1,5 +1,11 @@
+"""
+Ce fichier est déprécié. Les flashcards ne sont plus utilisées dans l'application.
+"""
+
+# Code commenté pour référence future
+"""
 from sqlalchemy.orm import Session
-from models import Flashcard
+from models.flashcard import Flashcard
 from schemas.flashcard import FlashcardCreate
 
 def get_flashcards(db: Session, skip: int = 0, limit: int = 100):
@@ -34,3 +40,4 @@ def update_flashcard(db: Session, flashcard_id: int, flashcard: FlashcardCreate)
         db.commit()
         db.refresh(db_flashcard)
     return db_flashcard
+"""
