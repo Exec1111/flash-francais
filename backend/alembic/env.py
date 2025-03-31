@@ -7,7 +7,9 @@ from alembic import context
 
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+# Ajoute le répertoire racine du projet (parent de backend) à sys.path
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, project_root)
 
 # Importer la base et l'URL de la base de données en utilisant le chemin absolu
 from backend.database import Base, SQLALCHEMY_DATABASE_URL
