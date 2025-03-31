@@ -31,7 +31,7 @@ def init_db():
         
         # Créer les tables directement avec SQLAlchemy
         logger.info("Création des tables avec SQLAlchemy...")
-        Base.metadata.create_all(bind=engine)
+        # Base.metadata.create_all(bind=engine)  # Commentée
         logger.info("Tables créées avec succès.")
         
         # Exécuter les migrations Alembic
