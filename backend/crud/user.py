@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from backend import models, schemas
-from backend.hashing import get_password_hash, verify_password
+from .. import models, schemas
+from ..hashing import get_password_hash, verify_password
 
 def get_user(db: Session, user_id: int):
     """Récupère un utilisateur par son ID."""

@@ -7,16 +7,15 @@ from alembic import context
 
 import os
 import sys
-# Ajoute le répertoire racine du projet (parent de backend) à sys.path
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-sys.path.insert(0, project_root)
+# Ajoute le répertoire parent (backend) à sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-# Importer la base et l'URL de la base de données en utilisant le chemin absolu
-from backend.database import Base, SQLALCHEMY_DATABASE_URL
+# Importer la base et l'URL de la base de données
+from database import Base, SQLALCHEMY_DATABASE_URL
 
 # Importer tous les modèles pour que Base contienne leurs métadonnées
-from backend.models import user # Assurez-vous d'importer tous vos modèles ici
-# from backend.models import autre_modele # Ajoutez d'autres imports si nécessaire
+from models import user # Assurez-vous d'importer tous vos modèles ici
+# from models import autre_modele # Ajoutez d'autres imports si nécessaire
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
