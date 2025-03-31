@@ -9,8 +9,12 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from models import Base
-from database import SQLALCHEMY_DATABASE_URL
+# Importer la base et l'URL de la base de données en utilisant le chemin absolu
+from backend.database import Base, SQLALCHEMY_DATABASE_URL
+
+# Importer tous les modèles pour que Base contienne leurs métadonnées
+from backend.models import user # Assurez-vous d'importer tous vos modèles ici
+# from backend.models import autre_modele # Ajoutez d'autres imports si nécessaire
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
