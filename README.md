@@ -98,11 +98,17 @@ Les variables d'environnement suivantes sont configurées sur Render :
 - `SECRET_KEY` : Clé secrète pour la sécurité de l'application
 - `RENDER` : Défini sur `true` pour l'environnement Render
 
-## Fonctionnalités
+## Tests
 
-- Création, lecture, mise à jour et suppression de flashcards
-- Chaque flashcard contient :
-  - Un mot en français
-  - Sa traduction en anglais
-  - Une phrase d'exemple (optionnelle)
-  - Un niveau de difficulté
+Les tests API se trouvent dans le répertoire `backend/tests/api_tests/`.
+Pour exécuter les tests :
+
+1.  **Assurez-vous que le serveur backend est en cours d'exécution** dans un terminal séparé (voir section "Démarrage > Backend").
+2.  **Assurez-vous que la base de données est initialisée et potentiellement peuplée.** Vous pouvez utiliser les scripts `init_db.py`, `clear_db.py` et `populate_db.py` dans le répertoire `backend` pour gérer l'état de la base de données avant les tests.
+    ```bash
+    cd backend
+    # Optionnel : Vider la base
+    python clear_db.py 
+    # Optionnel : Peupler avec des données de test
+    python populate_db.py 
+    ```

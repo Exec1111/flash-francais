@@ -14,7 +14,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from database import Base, SQLALCHEMY_DATABASE_URL
 
 # Importer tous les modèles pour que Base contienne leurs métadonnées
-from models import user # Assurez-vous d'importer tous vos modèles ici
+# --- Import models for Alembic --- #
+from models import user # Assurez-vous que votre modèle User est importé si nécessaire
+from models import progression # Ajoutez l'import pour Progression
+from models import sequence # Ajoutez l'import pour Sequence
+from models import session # Ajoutez l'import pour Session
+from models import resource # Ajoutez l'import pour Resource
+from models import objective # Ajoutez l'import pour Objective
+from models import association_tables # Importez pour les tables d'association
 # from models import autre_modele # Ajoutez d'autres imports si nécessaire
 
 # this is the Alembic Config object, which provides
