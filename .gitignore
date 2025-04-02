@@ -24,6 +24,14 @@ backend/.coverage*
 backend/htmlcov/
 backend/*.sqlite3
 backend/*.db
+backend/alembic/__pycache__/
+backend/alembic/versions/__pycache__/
+backend/models/__pycache__/
+backend/routers/__pycache__/*
+**/__pycache__/**
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
 
 # IDE / OS specific
 .vscode/
