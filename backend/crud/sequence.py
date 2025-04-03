@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import selectinload # Import for eager loading
 from models import Sequence # Import Sequence model
 from schemas.sequence import SequenceCreate, SequenceUpdate # Import schemas
 
@@ -12,7 +13,15 @@ def get_sequences(db: Session, skip: int = 0, limit: int = 100):
 
 def get_sequences_by_progression(db: Session, progression_id: int, skip: int = 0, limit: int = 100):
     """Récupère les séquences appartenant à une progression spécifique."""
-    return db.query(Sequence).filter(Sequence.progression_id == progression_id).offset(skip).limit(limit).all()
+    # Utilise selectinload pour charger efficacement les objectifs liés
+    return (
+        db.query(Sequence)
+        .options(selectinload(Sequence.objectives)) # Charge les objectifs associés
+        .filter(Sequence.progression_id == progression_id)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 def create_sequence(db: Session, sequence: SequenceCreate):
     """Crée une nouvelle séquence."""
