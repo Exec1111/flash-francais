@@ -10,18 +10,13 @@ import {
 import { Box, Button, Typography } from '@mui/material'; 
 import SideTreeView, { drawerWidth } from './components/SideTreeView';
 import LandingPage from './pages/LandingPage';
+import Login from './pages/auth/Login'; 
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import ResourceList from './components/resources/ResourceList';
 import Contact from './pages/Contact';
-
-// --- Simulation simple de l'authentification ---
-let authStatus = false; // Remplacez par votre logique d'auth réelle
-const login = () => { authStatus = true; };
-const logout = () => { authStatus = false; };
-const isAuthenticated = () => authStatus;
-// ----------------------------------------------
+import { useAuth } from './contexts/AuthContext';
 
 // --- Composant de Layout Protégé ---
 function ProtectedLayout() {
@@ -92,9 +87,9 @@ function ProtectedLayout() {
 
 // --- Composant de Route Protégée ---
 function ProtectedRoute({ children }) {
-  // Utiliser la fonction de simulation isAuthenticated pour la cohérence
-  if (!isAuthenticated()) { 
-    // Redirige vers la page de login si non authentifié
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) { 
     return <Navigate to="/login" replace />;
   }
   return children;
@@ -102,11 +97,15 @@ function ProtectedRoute({ children }) {
 // ---------------------------------
 
 function App() {
+  const { isAuthenticated } = useAuth();
+  console.log('App: État d\'authentification:', isAuthenticated);
+
   return (
     <Routes>
       {/* Routes publiques */}
       <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/auth/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
@@ -135,31 +134,8 @@ function App() {
       </Route>
 
       {/* Redirection par défaut */}
-      <Route path="*" element={<Navigate to={isAuthenticated() ? "/dashboard" : "/"} replace />} />
+      <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />} />
     </Routes>
-  );
-}
-
-// --- Composant de Page de Login ---
-function LoginPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const from = location.state?.from?.pathname || '/dashboard';
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-      <Typography variant="h4">Page de Login</Typography>
-      <Button
-        variant="contained"
-        onClick={() => {
-          login();
-          navigate(from, { replace: true });
-        }}
-      >
-        Se connecter (Simulation)
-      </Button>
-    </Box>
   );
 }
 

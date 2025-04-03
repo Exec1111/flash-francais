@@ -2,11 +2,17 @@ from sqlalchemy.orm import Session
 from models import Progression
 from schemas.progression import ProgressionCreate, ProgressionUpdate
 
-def get_progression(db: Session, progression_id: int):
-    return db.query(Progression).filter(Progression.id == progression_id).first()
+def get_progression(db: Session, progression_id: int, user_id: int = None):
+    query = db.query(Progression).filter(Progression.id == progression_id)
+    if user_id:
+        query = query.filter(Progression.user_id == user_id)
+    return query.first()
 
-def get_progressions(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(Progression).offset(skip).limit(limit).all()
+def get_progressions(db: Session, skip: int = 0, limit: int = 100, user_id: int = None):
+    query = db.query(Progression)
+    if user_id:
+        query = query.filter(Progression.user_id == user_id)
+    return query.offset(skip).limit(limit).all()
 
 def create_progression(db: Session, progression: ProgressionCreate):
     db_progression = Progression(**progression.model_dump())

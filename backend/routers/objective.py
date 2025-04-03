@@ -9,11 +9,11 @@ from schemas import objective as schemas_objective
 from schemas.sequence import SequenceReadSimple
 from schemas.session import SessionReadSimple
 
-router = APIRouter()
+objective_router = APIRouter()
 
 # --- CRUD Routes for Objective --- #
 
-@router.post("/", response_model=schemas_objective.ObjectiveRead, status_code=status.HTTP_201_CREATED)
+@objective_router.post("/", response_model=schemas_objective.ObjectiveRead, status_code=status.HTTP_201_CREATED)
 def create_objective(objective: schemas_objective.ObjectiveCreate, db: Session = Depends(get_db)):
     """Crée un nouvel objectif."""
     try:
@@ -21,13 +21,13 @@ def create_objective(objective: schemas_objective.ObjectiveCreate, db: Session =
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.get("/", response_model=List[schemas_objective.ObjectiveRead])
+@objective_router.get("/", response_model=List[schemas_objective.ObjectiveRead])
 def read_objectives(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Récupère une liste d'objectifs."""
     objectives = crud_objective.get_objectives(db, skip=skip, limit=limit)
     return objectives
 
-@router.get("/{objective_id}", response_model=schemas_objective.ObjectiveRead)
+@objective_router.get("/{objective_id}", response_model=schemas_objective.ObjectiveRead)
 def read_objective(objective_id: int, db: Session = Depends(get_db)):
     """Récupère un objectif par son ID."""
     db_objective = crud_objective.get_objective(db, objective_id=objective_id)
@@ -35,7 +35,7 @@ def read_objective(objective_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Objective not found")
     return db_objective
 
-@router.put("/{objective_id}", response_model=schemas_objective.ObjectiveRead)
+@objective_router.put("/{objective_id}", response_model=schemas_objective.ObjectiveRead)
 def update_objective(objective_id: int, objective: schemas_objective.ObjectiveUpdate, db: Session = Depends(get_db)):
     """Met à jour un objectif."""
     try:
@@ -46,7 +46,7 @@ def update_objective(objective_id: int, objective: schemas_objective.ObjectiveUp
     except ValueError as e:
          raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.delete("/{objective_id}", status_code=status.HTTP_204_NO_CONTENT)
+@objective_router.delete("/{objective_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_objective(objective_id: int, db: Session = Depends(get_db)):
     """Supprime un objectif."""
     deleted = crud_objective.delete_objective(db, objective_id=objective_id)
@@ -58,7 +58,7 @@ def delete_objective(objective_id: int, db: Session = Depends(get_db)):
 
 # -- Sequence <-> Objective -- #
 
-@router.post("/sequences/{sequence_id}/objectives/{objective_id}", status_code=status.HTTP_204_NO_CONTENT)
+@objective_router.post("/sequences/{sequence_id}/objectives/{objective_id}", status_code=status.HTTP_204_NO_CONTENT)
 def link_objective_to_sequence(sequence_id: int, objective_id: int, db: Session = Depends(get_db)):
     """Associe un objectif existant à une séquence existante."""
     try:
@@ -67,7 +67,7 @@ def link_objective_to_sequence(sequence_id: int, objective_id: int, db: Session 
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-@router.delete("/sequences/{sequence_id}/objectives/{objective_id}", status_code=status.HTTP_204_NO_CONTENT)
+@objective_router.delete("/sequences/{sequence_id}/objectives/{objective_id}", status_code=status.HTTP_204_NO_CONTENT)
 def unlink_objective_from_sequence(sequence_id: int, objective_id: int, db: Session = Depends(get_db)):
     """Désassocie un objectif d'une séquence."""
     try:
@@ -76,7 +76,7 @@ def unlink_objective_from_sequence(sequence_id: int, objective_id: int, db: Sess
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-@router.get("/by_sequence/{sequence_id}", response_model=List[schemas_objective.ObjectiveRead])
+@objective_router.get("/by_sequence/{sequence_id}", response_model=List[schemas_objective.ObjectiveRead])
 def get_objectives_for_sequence(sequence_id: int, db: Session = Depends(get_db)):
     """Récupère tous les objectifs associés à une séquence spécifique."""
     try:
@@ -84,7 +84,7 @@ def get_objectives_for_sequence(sequence_id: int, db: Session = Depends(get_db))
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-@router.get("/{objective_id}/sequences", response_model=List[SequenceReadSimple])
+@objective_router.get("/{objective_id}/sequences", response_model=List[SequenceReadSimple])
 def get_sequences_for_objective(objective_id: int, db: Session = Depends(get_db)):
     """Récupère la liste simplifiée des séquences associées à un objectif spécifique."""
     try:
@@ -96,7 +96,7 @@ def get_sequences_for_objective(objective_id: int, db: Session = Depends(get_db)
 
 # -- Session <-> Objective -- #
 
-@router.post("/sessions/{session_id}/objectives/{objective_id}", status_code=status.HTTP_204_NO_CONTENT)
+@objective_router.post("/sessions/{session_id}/objectives/{objective_id}", status_code=status.HTTP_204_NO_CONTENT)
 def link_objective_to_session(session_id: int, objective_id: int, db: Session = Depends(get_db)):
     """Associe un objectif existant à une séance existante."""
     try:
@@ -105,7 +105,7 @@ def link_objective_to_session(session_id: int, objective_id: int, db: Session = 
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-@router.delete("/sessions/{session_id}/objectives/{objective_id}", status_code=status.HTTP_204_NO_CONTENT)
+@objective_router.delete("/sessions/{session_id}/objectives/{objective_id}", status_code=status.HTTP_204_NO_CONTENT)
 def unlink_objective_from_session(session_id: int, objective_id: int, db: Session = Depends(get_db)):
     """Désassocie un objectif d'une séance."""
     try:
@@ -114,7 +114,7 @@ def unlink_objective_from_session(session_id: int, objective_id: int, db: Sessio
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-@router.get("/by_session/{session_id}", response_model=List[schemas_objective.ObjectiveRead])
+@objective_router.get("/by_session/{session_id}", response_model=List[schemas_objective.ObjectiveRead])
 def get_objectives_for_session(session_id: int, db: Session = Depends(get_db)):
     """Récupère tous les objectifs associés à une séance spécifique."""
     try:
@@ -122,7 +122,7 @@ def get_objectives_for_session(session_id: int, db: Session = Depends(get_db)):
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-@router.get("/{objective_id}/sessions", response_model=List[SessionReadSimple])
+@objective_router.get("/{objective_id}/sessions", response_model=List[SessionReadSimple])
 def get_sessions_for_objective(objective_id: int, db: Session = Depends(get_db)):
     """Récupère la liste simplifiée des séances associées à un objectif spécifique."""
     try:

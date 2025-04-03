@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, Interval, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Interval, Text
 from sqlalchemy.orm import relationship
 from database import Base
+from datetime import datetime
 # Importer la table d'association
 from models.association_tables import session_objective_association, session_resource_association
 
@@ -8,10 +9,13 @@ class Session(Base):
     __tablename__ = "sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(255), nullable=False)
-    date = Column(DateTime, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    user = relationship("User", back_populates="sessions")
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    date = Column(DateTime, default=datetime.utcnow)
+    duration = Column(Integer)  # Durée en minutes
     notes = Column(Text, nullable=True)
-    duration = Column(Interval, nullable=True) # Utilisation de Interval pour la durée
     # Foreign Key to Sequence
     sequence_id = Column(Integer, ForeignKey("sequences.id"), nullable=False)
 

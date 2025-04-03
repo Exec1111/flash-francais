@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -21,26 +21,38 @@ import authService from '../../services/auth';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+
+  useEffect(() => {
+    if (shouldRedirect) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [shouldRedirect, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    console.log('Login: Début de la connexion');
     
     try {
       setLoading(true);
+      console.log('Login: Appel du service d\'authentification');
       
       // Appel au service d'authentification pour la connexion
-      await authService.login(email, password);
+      const userData = await authService.login(email, password);
+      console.log('Login: Connexion réussie, données utilisateur:', userData);
       
-      // Redirection vers le tableau de bord
-      navigate('/dashboard');
+      // Déclencher la redirection après la mise à jour de l'état
+      console.log('Login: Redirection vers le dashboard');
+      setShouldRedirect(true);
     } catch (err) {
-      console.error('Erreur lors de la connexion:', err);
+      console.error('Login: Erreur lors de la connexion:', err);
       setError(err.detail || 'Email ou mot de passe incorrect');
     } finally {
       setLoading(false);

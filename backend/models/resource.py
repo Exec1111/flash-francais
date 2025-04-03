@@ -15,6 +15,8 @@ class Resource(Base):
     __tablename__ = "resources"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    user = relationship("User", back_populates="resources")
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     type = Column(Enum(ResourceType), nullable=False) # Utilisation de l'Enum pour le type

@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, ForeignKey
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from database import Base
 import enum
 
@@ -20,6 +21,13 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relations avec les autres modèles
+    resources = relationship("Resource", back_populates="user")
+    sequences = relationship("Sequence", back_populates="user")
+    sessions = relationship("Session", back_populates="user")
+    objectives = relationship("Objective", back_populates="user")
+    progressions = relationship("Progression", back_populates="user")
 
     def __repr__(self):
         return f"<User {self.email}>"

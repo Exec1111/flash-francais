@@ -59,7 +59,7 @@ export const authService = {
    */
   getCurrentUser: async () => {
     try {
-      const response = await api.get(`${AUTH_ENDPOINT}/me`);
+      const response = await api.get(`/auth/me`);
       return response.data;
     } catch (error) {
       throw error.response?.data || { detail: "Erreur lors de la récupération des informations utilisateur" };

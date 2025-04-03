@@ -14,10 +14,12 @@ import {
 } from '@mui/icons-material';
 import { SimpleTreeView, TreeItem } from '@mui/x-tree-view'; 
 import ResourceButton from './resources/ResourceButton';
+import { useAuth } from '../contexts/AuthContext';
 
 export const drawerWidth = 480;  
 
 function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
+  const { user } = useAuth();
   const theme = useTheme();
   const [treeData, setTreeData] = useState({ id: 'root', name: 'Progressions', type: 'root', children: [] }); 
   const [isLoading, setIsLoading] = useState(true);
@@ -75,7 +77,12 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch('http://localhost:10000/api/v1/progressions'); 
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:10000/api/v1/progressions', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }); 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -85,9 +92,8 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
           id: prog.id,
           name: prog.title, 
           type: 'progression', 
-          description: prog.description, // Garder la description si besoin ailleurs
-          // Ajouter un enfant factice pour que l'icône d'expansion s'affiche
-          children: [{ id: `loading-${prog.id}`, name: 'Chargement...', type: 'loading' }] // Dummy child for sessions
+          description: prog.description,
+          children: [{ id: `loading-${prog.id}`, name: 'Chargement...', type: 'loading' }]
         }));
 
         console.log("Données formatées pour TreeView:", formattedProgressions);
@@ -101,7 +107,7 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
     };
 
     fetchData();
-  }, []); 
+  }, [user?.id]);  
 
   const renderedTreeNodes = React.useMemo(() => {
     // Helper function to render the tree recursively
@@ -264,7 +270,12 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
       console.log(`CONDITION REMPLIE pour PROGRESSION ${newlyExpandedItemId}. Chargement des séquences...`); // LOG 4
       (async () => {
         try {
-          const response = await fetch(`http://localhost:10000/api/v1/sequences/by_progression/${newlyExpandedItemId}`);
+          const token = localStorage.getItem('token');
+          const response = await fetch(`http://localhost:10000/api/v1/sequences/by_progression/${newlyExpandedItemId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -293,7 +304,12 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
       console.log(`CONDITION REMPLIE pour SÉQUENCE ${newlyExpandedItemId}. Chargement des séances...`); 
       (async () => {
         try {
-          const response = await fetch(`http://localhost:10000/api/v1/sessions/by_sequence/${newlyExpandedItemId}`);
+          const token = localStorage.getItem('token');
+          const response = await fetch(`http://localhost:10000/api/v1/sessions/by_sequence/${newlyExpandedItemId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -320,7 +336,12 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
       console.log(`CONDITION REMPLIE pour SÉANCE ${newlyExpandedItemId}. Chargement des ressources...`); 
       (async () => {
         try {
-          const response = await fetch(`http://localhost:10000/api/v1/resources/by_session/${newlyExpandedItemId}`);
+          const token = localStorage.getItem('token');
+          const response = await fetch(`http://localhost:10000/api/v1/resources/by_session/${newlyExpandedItemId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
