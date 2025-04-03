@@ -104,13 +104,13 @@ function ProtectedRoute({ children }) {
 function App() {
   return (
     <Routes>
-      {/* Route pour la page publique LandingPage (exemple) */}
+      {/* Routes publiques */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
-      {/* Routes protégées utilisant le ProtectedLayout */}
+      {/* Routes protégées */}
       <Route
         path="/dashboard"
         element={
@@ -119,16 +119,22 @@ function App() {
           </ProtectedRoute>
         }
       >
-         {/* Route enfant pour le contenu du Dashboard */}
         <Route index element={<Dashboard />} />
-        <Route path="resources" element={<ResourceList />} />
-        <Route path="resources/new" element={<ResourceList />} />
-         {/* Ajoutez d'autres routes enfants du dashboard ici si nécessaire */}
-         {/* exemple: <Route path="settings" element={<SettingsPage />} /> */}
+      </Route>
+
+      <Route
+        path="/resources"
+        element={
+          <ProtectedRoute>
+            <ProtectedLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<ResourceList />} />
+        <Route path="new" element={<ResourceList />} />
       </Route>
 
       {/* Redirection par défaut */}
-      {/* Utiliser la fonction de simulation isAuthenticated ici aussi */}
       <Route path="*" element={<Navigate to={isAuthenticated() ? "/dashboard" : "/"} replace />} />
     </Routes>
   );

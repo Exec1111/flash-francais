@@ -18,6 +18,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { DataGrid } from '@mui/x-data-grid';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 const columns = [
   { field: 'id', headerName: 'ID', width: 90 },
@@ -40,10 +41,10 @@ const columns = [
     width: 130,
     renderCell: (params) => (
       <Box sx={{ display: 'flex', gap: 1 }}>
-        <IconButton size="small" title="Modifier">
+        <IconButton size="small" title="Modifier" data-action="edit">
           <EditIcon />
         </IconButton>
-        <IconButton size="small" title="Supprimer" color="error">
+        <IconButton size="small" title="Supprimer" color="error" data-action="delete">
           <DeleteIcon />
         </IconButton>
       </Box>
@@ -56,26 +57,66 @@ const ResourceList = () => {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  useEffect(() => {
-    fetchResources();
-  }, []);
-
+  // Fonction de chargement des ressources
   const fetchResources = async () => {
     try {
-      const response = await fetch('/api/resources');
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:10000/api/v1/resources', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       setResources(data);
     } catch (error) {
       console.error('Erreur lors du chargement des ressources:', error);
+      setResources([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // Fonctions de gestion des ressources
   const handleCreateResource = () => {
     navigate('/resources/new');
   };
+
+  const handleEditResource = (id) => {
+    navigate(`/resources/${id}/edit`);
+  };
+
+  const handleDeleteResource = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:10000/api/v1/resources/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Recharger la liste après suppression
+      fetchResources();
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la ressource:', error);
+    }
+  };
+
+  // Effet de chargement initial
+  useEffect(() => {
+    fetchResources();
+  }, []);
 
   if (loading) {
     return (
@@ -123,6 +164,18 @@ const ResourceList = () => {
             checkboxSelection
             disableSelectionOnClick
             autoHeight
+            onCellClick={(params, event) => {
+              if (params.field === 'actions') {
+                if (event.target.closest('button')) {
+                  const action = event.target.closest('button').dataset.action;
+                  if (action === 'edit') {
+                    handleEditResource(params.id);
+                  } else if (action === 'delete') {
+                    handleDeleteResource(params.id);
+                  }
+                }
+              }
+            }}
           />
         </Paper>
       ) : (
@@ -148,10 +201,21 @@ const ResourceList = () => {
                       {resource.type}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                      <IconButton size="small" title="Modifier">
+                      <IconButton 
+                        size="small" 
+                        title="Modifier" 
+                        data-action="edit"
+                        onClick={() => handleEditResource(resource.id)}
+                      >
                         <EditIcon />
                       </IconButton>
-                      <IconButton size="small" title="Supprimer" color="error">
+                      <IconButton 
+                        size="small" 
+                        title="Supprimer" 
+                        color="error"
+                        data-action="delete"
+                        onClick={() => handleDeleteResource(resource.id)}
+                      >
                         <DeleteIcon />
                       </IconButton>
                     </Box>
