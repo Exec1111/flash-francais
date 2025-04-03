@@ -1,12 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Drawer, IconButton, Box, Typography, useTheme, Tooltip, CircularProgress } from '@mui/material';
+import { Drawer, IconButton, Box, Typography, useTheme, Tooltip, CircularProgress, Divider } from '@mui/material';
 import { 
-  Menu as MenuIcon, 
+  Menu as MenuIcon,
   ChevronLeft as ChevronLeftIcon, 
   Description as DescriptionIcon, 
-  CheckCircleOutline as CheckCircleOutlineIcon, 
-  ExpandMore as ExpandMoreIcon, 
-  ChevronRight as ChevronRightIcon,
   Checklist as ChecklistIcon,
   AccountTree as AccountTreeIcon,
   FormatListBulleted as FormatListBulletedIcon,
@@ -16,8 +13,9 @@ import {
   FitnessCenter as ExerciseIcon 
 } from '@mui/icons-material';
 import { SimpleTreeView, TreeItem } from '@mui/x-tree-view'; 
- 
-export const drawerWidth = 480;
+import ResourceButton from './resources/ResourceButton';
+
+export const drawerWidth = 480;  
 
 function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
   const theme = useTheme();
@@ -349,42 +347,66 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
   };
 
   return (
-    <>
-      <IconButton onClick={open ? handleDrawerClose : handleDrawerOpen}>
-          {open ? <ChevronLeftIcon /> : <MenuIcon />}
-      </IconButton>
-
-      <Drawer
-        sx={{
+    <Drawer
+      sx={{
+        width: drawerWidth,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
           width: drawerWidth,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-            top: '64px', 
-            height: 'calc(100% - 64px)',
-          },
+          boxSizing: 'border-box',
+          top: '64px', 
+          height: 'calc(100% - 64px)',
+        },
+      }}
+      variant="persistent"
+      anchor="left"
+      open={open}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '16px',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
         }}
-        variant="persistent"
-        anchor="left"
-        open={open}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', padding: theme.spacing(0, 2), ...theme.mixins.toolbar, justifyContent: 'flex-end' }}>
-           <Typography variant="h6" sx={{ flexGrow: 1, textAlign: 'center' }}>Navigation</Typography>
-        </Box>
+        <IconButton onClick={open ? handleDrawerClose : handleDrawerOpen}>
+          {open ? <ChevronLeftIcon /> : <MenuIcon />}
+        </IconButton>
+        <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          Navigation
+        </Typography>
+      </Box>
 
-        <SimpleTreeView
-          aria-label="progressions tree"
-          sx={{ flexGrow: 1, width: '100%', overflowY: 'auto', padding: 1 }} 
-          expanded={expandedItems} 
-          onExpandedItemsChange={handleExpandedItemsChange} 
-        >
-          {isLoading && <Typography sx={{ p: 2 }}>Chargement...</Typography>}
-          {error && <Typography color="error" sx={{ p: 2 }}>{error}</Typography>}
-          {!isLoading && !error && renderedTreeNodes} 
-        </SimpleTreeView>
-      </Drawer>
-    </>
+      <Box sx={{ p: 2 }}>
+        <ResourceButton />
+      </Box>
+
+      <Divider sx={{ my: 2 }} />
+
+      <Box sx={{ overflow: 'auto', height: 'calc(100vh - 120px)' }}>
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', pt: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Box sx={{ p: 2 }}>
+            <Typography color="error">{error}</Typography>
+          </Box>
+        ) : (
+          <SimpleTreeView
+            aria-label="progressions tree"
+            sx={{ flexGrow: 1, width: '100%', overflowY: 'auto', padding: 1 }} 
+            expanded={expandedItems} 
+            onExpandedItemsChange={handleExpandedItemsChange} 
+          >
+            {renderedTreeNodes} 
+          </SimpleTreeView>
+        )}
+      </Box>
+    </Drawer>
   );
 }
 

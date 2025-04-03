@@ -6,6 +6,64 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import ShareIcon from '@mui/icons-material/Share';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import heroImage from '../images/hero1.png';
+import NavigationButton from '../components/NavigationButton';
+import { styled, useTheme } from '@mui/material/styles';
+import { Box, Button } from '@mui/material';
+
+const StyledButton = styled(Button)(({ theme }) => ({
+  textTransform: 'none',
+  borderRadius: 30,
+  padding: '8px 24px',
+  minWidth: 120,
+  '&:hover': {
+    backgroundColor: theme.palette.primary.light,
+    transform: 'translateY(-1px)',
+    transition: 'transform 0.2s ease-in-out',
+  },
+  '&:active': {
+    transform: 'translateY(0)',
+  },
+}));
+
+const Header = styled(Box)(({ theme }) => ({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  zIndex: 1,
+  bgcolor: 'background.paper',
+  borderBottom: '1px solid',
+  borderColor: 'divider',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  py: 2,
+}));
+
+const Navigation = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+}));
+
+const ButtonGroup = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  gap: 2,
+  alignItems: 'center',
+}));
+
+const ActionButton = styled(Button)(({ theme }) => ({
+  textTransform: 'none',
+  borderRadius: 30,
+  padding: '8px 24px',
+  minWidth: 120,
+  '&:hover': {
+    backgroundColor: theme.palette.primary.light,
+    transform: 'translateY(-1px)',
+    transition: 'transform 0.2s ease-in-out',
+  },
+  '&:active': {
+    transform: 'translateY(0)',
+  },
+}));
 
 const LandingPage = () => {
   return (
@@ -19,15 +77,35 @@ const LandingPage = () => {
           </a>
           <nav>
             <ul>
-              <li><a href="#features">Fonctionnalités</a></li>
-              <li><a href="#onboarding">Démarrage</a></li>
-              <li><a href="#">Tarifs</a></li> { /* Placeholder */}
-              <li><a href="#">Contact</a></li> { /* Placeholder */}
+              <li>
+                <StyledButton component={Link} to="/features" variant="outlined" color="primary">
+                  Fonctionnalités
+                </StyledButton>
+              </li>
+              <li>
+                <StyledButton component={Link} to="/onboarding" variant="outlined" color="primary">
+                  Démarrage
+                </StyledButton>
+              </li>
+              <li>
+                <StyledButton component={Link} to="/pricing" variant="outlined" color="primary">
+                  Tarifs
+                </StyledButton>
+              </li>
+              <li>
+                <StyledButton component={Link} to="/contact" variant="outlined" color="primary">
+                  Contact
+                </StyledButton>
+              </li>
             </ul>
           </nav>
           <div className="header-buttons">
-            <Link to="/login" className="btn btn-outline" style={{ marginRight: '10px' }}>Connexion</Link>
-            <Link to="/register" className="btn">Inscription</Link>
+            <NavigationButton to="/login" className="btn btn-outline" style={{ marginRight: '10px' }}>
+              Connexion
+            </NavigationButton>
+            <NavigationButton to="/register" className="btn">
+              Inscription
+            </NavigationButton>
           </div>
         </div>
       </header>
@@ -41,8 +119,14 @@ const LandingPage = () => {
               La plateforme tout-en-un pour créer, gérer et partager des flashcards interactives.
               Engagez vos élèves et suivez leurs progrès comme jamais auparavant.
             </p>
-            <Link to="/register" className="btn" style={{ marginRight: '10px' }}>Commencer gratuitement</Link>
-            <a href="#features" className="btn btn-outline">Découvrir les fonctionnalités</a>
+            <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
+              <NavigationButton to="/register" variant="contained" size="large" color="primary">
+                Commencer gratuitement
+              </NavigationButton>
+              <ActionButton variant="outlined" size="large" color="primary">
+                Découvrir les fonctionnalités
+              </ActionButton>
+            </Box>
           </div>
           <div className="hero-image">
             <img src={heroImage} alt="Illustration FlashFrançais" />
@@ -128,8 +212,14 @@ const LandingPage = () => {
           <h2>Prêt à révolutionner votre enseignement du français ?</h2>
           <p>Rejoignez plus de 10 000 professeurs qui utilisent déjà FlashFrançais pour créer des cours engageants et efficaces.</p>
           <div className="cta-buttons">
-            <Link to="/register" className="btn" style={{ marginRight: '10px' }}>Je m'inscris (c'est gratuit !)</Link>
-            <a href="#" className="btn btn-outline">Demander une démo</a> { /* Placeholder */}
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+              <NavigationButton to="/register" variant="contained" size="large" color="primary">
+                Je m'inscris (c'est gratuit !)
+              </NavigationButton>
+              <ActionButton variant="outlined" size="large" color="primary">
+                Demander une démo
+              </ActionButton>
+            </Box>
           </div>
         </div>
       </section>
