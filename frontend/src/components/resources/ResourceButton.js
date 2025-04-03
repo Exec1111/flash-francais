@@ -6,7 +6,7 @@ const ResourceButton = () => {
   const navigate = useNavigate();
 
   const handleManageResources = () => {
-    navigate('/resources');
+    navigate('/dashboard/resources');
   };
 
   return (
