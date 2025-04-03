@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, Enum, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from database import Base
 import enum
+from models.association_tables import session_resource_association
 
 # Définir les types de ressources possibles
 class ResourceType(str, enum.Enum):
@@ -21,8 +22,10 @@ class Resource(Base):
     # Ou utiliser Text et analyser côté application.
     # JSON est plus flexible pour différentes structures.
     content = Column(JSON, nullable=True)
-    # Foreign Key to Session (Optional)
-    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=True)
-
-    # Relationship with Session (many-to-one, optional)
-    session = relationship("Session", back_populates="resources") # 'resources' sera ajouté à Session
+    
+    # Relations avec les séances (many-to-many)
+    sessions = relationship(
+        "Session",
+        secondary=session_resource_association,
+        back_populates="resources"
+    )

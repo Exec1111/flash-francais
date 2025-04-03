@@ -12,6 +12,7 @@ from database import SessionLocal, engine, Base
 from models import Progression, Objective, Sequence, Session as SessionModel, Resource, User # Import des modèles principaux
 from models.resource import ResourceType # Import de l'Enum depuis son module spécifique
 from models.association_tables import session_objective_association, sequence_objective_association # Table Progression-Sequence non définie ici
+from sqlalchemy import text
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
@@ -24,25 +25,35 @@ logger.info(f"URL de base de données : {os.environ.get('DATABASE_URL', 'non dé
 
 def clear_existing_data(db: Session):
     """Supprime les données existantes (sauf utilisateurs)."""
-    logger.info("Suppression des anciennes données (sauf utilisateurs)...")
+    logger.info("Suppression des anciennes données...")
+    
     try:
-        # Supprimer les liens où les tables d'association sont explicitement définies
-        db.execute(session_objective_association.delete()) # Nom corrigé
-        db.execute(sequence_objective_association.delete()) # Nom corrigé
-        # db.execute(progression_sequence_association.delete()) # Cette table n'est pas définie ici
+        # Supprimer les associations d'abord
+        logger.info("Suppression des associations...")
+        db.execute(text("DELETE FROM session_resource"))
+        
+        # Supprimer les données des tables dans l'ordre inverse des dépendances
+        logger.info("Suppression des séances...")
+        db.query(SessionModel).delete()
+        
+        logger.info("Suppression des ressources...")
+        db.query(Resource).delete()
+        
+        logger.info("Suppression des objectifs...")
+        db.query(Objective).delete()
+        
+        logger.info("Suppression des séquences...")
+        db.query(Sequence).delete()
+        
+        logger.info("Suppression des progressions...")
+        db.query(Progression).delete()
+        
         db.commit()
-        # La suppression en cascade devrait gérer les liens Progression-Sequence lors de la suppression des Progressions/Sequences
-        db.query(Resource).delete(synchronize_session=False)
-        db.query(SessionModel).delete(synchronize_session=False)
-        db.query(Sequence).delete(synchronize_session=False)
-        db.query(Objective).delete(synchronize_session=False)
-        db.query(Progression).delete(synchronize_session=False)
-        db.commit()
-        logger.info("Anciennes données supprimées.")
+        logger.info("Données supprimées avec succès.")
     except Exception as e:
-        logger.error(f"Erreur lors de la suppression des anciennes données: {e}")
+        logger.error(f"Erreur lors de la suppression des données: {e}")
         db.rollback()
-        raise # Propage l'erreur pour arrêter le script
+        raise
 
 def populate_database():
     db: Session = SessionLocal()
@@ -183,19 +194,42 @@ def populate_database():
         logger.info(f"{len(sessions)} Sessions créées.")
         session_ids = [s.id for s in sessions] # Récupérer les IDs des sessions
         
-        # Ressources (une par session pour l'exemple)
+        # Créer les ressources indépendantes
         resources = []
-        for sess in sessions:
-            # Assurer que le type correspond à l'Enum ResourceType défini dans le modèle
-            res_type_enum = random.choice(list(ResourceType))
-            res_title = f"{res_type_enum.value.capitalize()} pour {sess.title[:30]}..."
-            res_url = f"http://example.com/{res_type_enum.value}/{sess.id}" # Générer une URL fictive
-            # Utiliser le champ 'description' pour stocker l'URL (faute de champ 'link' ou 'url')
-            resources.append(Resource(type=res_type_enum, title=res_title, description=res_url, session_id=sess.id))
+        resource_types = list(ResourceType)
+        
+        # Créer quelques ressources de différents types
+        for i in range(20):  # Créer 20 ressources
+            res_type = random.choice(resource_types)
+            resources.append(Resource(
+                type=res_type,
+                title=f"Ressource {res_type.value} {i+1}",
+                description=f"Description de la ressource {i+1}",
+                content={
+                    "url": f"http://example.com/{res_type.value}/resource_{i+1}",
+                    "type": res_type.value
+                }
+            ))
         
         db.add_all(resources)
         db.commit()
-        logger.info(f"{len(resources)} Ressources créées.")
+        logger.info(f"{len(resources)} Ressources indépendantes créées.")
+        
+        # Associer les ressources aux séances
+        for sess in sessions:
+            # Choisir aléatoirement entre 1 et 3 ressources pour chaque séance
+            num_resources = random.randint(1, 3)
+            selected_resources = random.sample(resources, num_resources)
+            
+            # Associer les ressources à la séance via la table d'association
+            for resource in selected_resources:
+                sess.resources.append(resource)
+            
+            # Log pour le débogage
+            logger.info(f"Séance '{sess.title}' associée à {num_resources} ressources")
+            
+        db.commit()
+        logger.info("Association des ressources aux séances terminée.")
 
         logger.info("Peuplement de la base de données terminé avec succès !")
 

@@ -9,7 +9,7 @@ load_dotenv()
 
 import sys
 import traceback
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.orm import sessionmaker
 from models import Base, User, UserRole
 from hashing import get_password_hash
@@ -17,13 +17,13 @@ from hashing import get_password_hash
 # Configuration de la base de données
 SQLALCHEMY_DATABASE_URL = os.environ.get("DATABASE_URL")
 if not SQLALCHEMY_DATABASE_URL:
-    print("Erreur: L'URL de la base de données n'est pas définie dans le fichier .env")
-    sys.exit(1)
+    print("Erreur: Aucune URL de base de données trouvée")
+    exit(1)
 
-# Créer un moteur SQLAlchemy directement avec l'URL
+# Créer un moteur SQLAlchemy
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
-print(f"URL de base de données utilisée: {SQLALCHEMY_DATABASE_URL}")
 
+# Créer une session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def drop_all_tables():
@@ -90,10 +90,11 @@ def create_admin_user():
     finally:
         db.close()
 
-def init_db():
+def init_db(args=None):
     """
     Initialise la base de données en créant les tables et en créant un administrateur.
     """
+    logger = logging.getLogger(__name__)
     try:
         print("Initialisation de la base de données...")
         
@@ -102,23 +103,25 @@ def init_db():
             result = conn.execute(text("SELECT 1"))
             print(f"Connexion à la base de données réussie: {result.fetchone()}")
         
-        # Créer les tables
-        print("Création des tables avec SQLAlchemy...")
-        Base.metadata.create_all(bind=engine)
-        print("Tables créées avec succès.")
+        # Vérifier si les tables existent déjà
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
         
-        # Vérifier les tables créées
-        with engine.connect() as conn:
-            tables = conn.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"))
-            table_list = [table[0] for table in tables]
-            print(f"Tables créées: {table_list}")
-            
-            # Vérifier si la table users existe
-            if 'users' not in table_list:
-                print("La table 'users' n'a pas été créée correctement!")
-                return False
-            else:
-                print("La table 'users' a été créée avec succès.")
+        # Supprimer les tables si --reinit est spécifié
+        if args and args.reinit:
+            logger.info("Suppression des tables existantes...")
+            Base.metadata.drop_all(bind=engine)
+        
+        # Créer les tables si elles n'existent pas
+        logger.info("Création des tables si nécessaire...")
+        Base.metadata.create_all(bind=engine)
+        
+        # Vérifier que les tables ont été créées
+        new_tables = inspector.get_table_names()
+        if set(new_tables) != set(existing_tables):
+            logger.info(f"Tables créées: {', '.join(set(new_tables) - set(existing_tables))}")
+        else:
+            logger.info("Aucune nouvelle table créée")
         
         # Créer un administrateur par défaut
         print("Création de l'administrateur par défaut...")
@@ -156,10 +159,23 @@ def reinitialize_db():
 
 if __name__ == "__main__":
     import argparse
+    import logging
+    
+    logging.basicConfig(level=logging.INFO)
     
     parser = argparse.ArgumentParser(description='Gestion de la base de données')
     parser.add_argument('--reinit', action='store_true', help='Réinitialise complètement la base de données')
+    parser.add_argument('--force', action='store_true', help='Force la réinitialisation complète, y compris suppression des données')
     args = parser.parse_args()
+
+    if args.force:
+        logger = logging.getLogger(__name__)
+        logger.info("Force de la réinitialisation complète...")
+        # Supprimer toutes les tables existantes
+        Base.metadata.drop_all(bind=engine)
+        logger.info("Toutes les tables ont été supprimées")
+        
+    init_db(args)
     
     try:
         print("Démarrage du script d'initialisation de la base de données...")

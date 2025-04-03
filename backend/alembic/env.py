@@ -7,6 +7,11 @@ from alembic import context
 
 import os
 import sys
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement
+load_dotenv()
+
 # Ajoute le répertoire parent (backend) à sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 

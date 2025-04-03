@@ -16,3 +16,11 @@ session_objective_association = Table(
     Column('session_id', Integer, ForeignKey('sessions.id'), primary_key=True),
     Column('objective_id', Integer, ForeignKey('objectives.id'), primary_key=True) # 'objectives.id' sera défini plus tard
 )
+
+# Table d'association pour lier les séances aux ressources
+session_resource_association = Table(
+    'session_resource',
+    Base.metadata,
+    Column('session_id', Integer, ForeignKey('sessions.id'), primary_key=True),
+    Column('resource_id', Integer, ForeignKey('resources.id'), primary_key=True)
+)

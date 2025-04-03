@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, Interval, ForeignKey, Date
 from sqlalchemy.orm import relationship
 from database import Base
 # Importer la table d'association
-from models.association_tables import session_objective_association
+from models.association_tables import session_objective_association, session_resource_association
 
 class Session(Base):
     __tablename__ = "sessions"
@@ -17,11 +17,15 @@ class Session(Base):
 
     # Relationship with Sequence (many-to-one)
     sequence = relationship("Sequence", back_populates="sessions") # 'sessions' sera ajouté à Sequence
-    # Relationship with Resource (one-to-many)
-    resources = relationship("Resource", back_populates="session")
     # Relationship with Objective (many-to-many)
     objectives = relationship(
         "Objective",
         secondary=session_objective_association,
+        back_populates="sessions"
+    )
+    
+    resources = relationship(
+        "Resource",
+        secondary=session_resource_association,
         back_populates="sessions"
     )
