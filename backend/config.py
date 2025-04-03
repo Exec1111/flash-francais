@@ -47,5 +47,10 @@ def get_settings() -> Settings:
         
         # Les paramètres de documentation sont déjà définis par .env.production
         # Nous ne les modifions pas ici pour éviter les conflits
+    else:
+        # En développement local, utiliser l'URL depuis .env
+        local_db_url = os.environ.get("DATABASE_URL")
+        if local_db_url:
+            settings.DATABASE_URL = local_db_url
     
     return settings

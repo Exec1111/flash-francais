@@ -1,3 +1,9 @@
+import os
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement AVANT d'importer database.py
+load_dotenv()
+
 import logging
 import random
 from datetime import date, timedelta
@@ -7,8 +13,14 @@ from models import Progression, Objective, Sequence, Session as SessionModel, Re
 from models.resource import ResourceType # Import de l'Enum depuis son module spécifique
 from models.association_tables import session_objective_association, sequence_objective_association # Table Progression-Sequence non définie ici
 
+# Configuration du logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Afficher les informations de connexion
+logger.info("\n=== Configuration de la base de données ===")
+logger.info(f"Environnement : {os.environ.get('ENV', 'unknown')}")
+logger.info(f"URL de base de données : {os.environ.get('DATABASE_URL', 'non définie')}")
 
 def clear_existing_data(db: Session):
     """Supprime les données existantes (sauf utilisateurs)."""
