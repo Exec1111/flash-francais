@@ -1,4 +1,9 @@
 from pydantic import BaseModel
+from typing import List, TYPE_CHECKING
+
+# Pour les type hints uniquement, afin d'éviter les imports circulaires réels
+if TYPE_CHECKING:
+    from schemas.objective import ObjectiveRead
 
 class SequenceBase(BaseModel):
     title: str
@@ -16,9 +21,9 @@ class SequenceUpdate(BaseModel): # Allow partial updates
 class SequenceRead(SequenceBase):
     id: int
     progression_id: int
-    # Inclure potentiellement des sessions ou objectifs liés si nécessaire (attention aux dépendances circulaires)
+    # Utiliser une Forward Reference (string) pour éviter l'import circulaire
+    objectives: List['ObjectiveRead'] = []
     # sessions: List["SessionReadSimple"] = [] # Nécessiterait SessionReadSimple
-    # objectives: List["ObjectiveReadSimple"] = [] # Nécessiterait ObjectiveReadSimple
 
     class Config:
         from_attributes = True # Compatible avec l'ORM SQLAlchemy

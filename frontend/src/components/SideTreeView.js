@@ -107,16 +107,9 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
 
   const renderedTreeNodes = React.useMemo(() => {
     // Helper function to render the tree recursively
-    const renderTree = (nodes) => {
-      // Filter out any potentially invalid node structures before mapping
-      const validNodes = nodes.filter(node => node && typeof node === 'object' && node.id !== undefined && node.name !== undefined);
-
-      if (!validNodes || validNodes.length === 0) {
-        return null; // Return null or some placeholder if no valid nodes
-      }
-
-      // Now map over the guaranteed valid nodes
-      return validNodes.map((node) => (
+    const renderTree = (nodes, currentExpandedItems) =>
+      // Vérifier si nodes est bien un tableau avant de mapper
+      Array.isArray(nodes) && nodes.map((node) => (
         <TreeItem
           key={node.id} // React key
           itemId={node.id.toString()} // Ensure itemId is a string
@@ -126,7 +119,7 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between', // Keep space between text and icons
+                justifyContent: 'space-between', // Rétablir l'alignement horizontal
                 width: '100%', 
                 p: 1, 
                 overflow: 'hidden', 
@@ -162,6 +155,28 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
                 {node.type === 'progression' && (
                   <FolderIcon sx={{ fontSize: 18, color: 'action.active' }} /> 
                 )}
+                {/* Icône Objectifs pour les séquences AVEC objectifs */} 
+                {node.type === 'sequence' && Array.isArray(node.objectives) && node.objectives.length > 0 && (
+                  <Tooltip 
+                    placement="right"
+                    title={(
+                      <Box sx={{ p: 1 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>Objectifs :</Typography>
+                        {node.objectives.map((obj, index) => (
+                          // Utiliser un Tooltip interne pour la description de chaque objectif
+                          <Tooltip key={`obj-tooltip-${node.id}-${index}`} title={obj.description || ''} placement="top-start">
+                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                              - {obj.title}
+                            </Typography>
+                          </Tooltip>
+                        ))}
+                      </Box>
+                    )}
+                  >
+                    {/* L'icône elle-même */} 
+                    <ChecklistIcon sx={{ fontSize: 18, color: 'primary.main', ml: 0.5 }} />
+                  </Tooltip>
+                )}
                 {node.type === 'sequence' && (
                   <AccountTreeIcon sx={{ fontSize: 18, color: 'action.active' }} />
                 )}
@@ -191,6 +206,7 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
             </Box>
           )}
         >
+          {/* Les enfants directs du TreeItem (loading ou enfants récursifs) */} 
           {/* Affichage conditionnel pendant le chargement ou pour les enfants normaux */}
           {Array.isArray(node.children) && node.children.length > 0 ? (
             // Afficher un indicateur de chargement si l'enfant est le noeud factice
@@ -201,16 +217,19 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
               </Box>
             ) : (
               // Sinon, rendre les enfants récursivement
-              renderTree(node.children)
+              renderTree(node.children, currentExpandedItems)
             )
           ) : null}
+        {/* Fin des enfants directs */} 
+ 
         </TreeItem>
-      )); // Fin du map
-    }; // Fin de renderTree
+      ));
+    // Fin de renderTree
 
     // Appel initial pour les enfants directs de treeData
-    return renderTree(treeData.children);
-  }, [treeData.children, checkTextTruncation, isTextTruncated]); // Fin des dépendances et de useMemo
+    return renderTree(treeData.children, expandedItems); // Passer expandedItems ici
+ 
+  }, [treeData, isTextTruncated, textRef, checkTextTruncation, expandedItems]); // Ajout de expandedItems aux dépendances
 
   const handleExpandedItemsChange = (event, itemIds) => {
     console.log("Expanded items changed:", itemIds); // LOG 1

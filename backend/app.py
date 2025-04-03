@@ -131,6 +131,19 @@ def test_sequence_route():
 def root():
     return {"message": "Bienvenue sur l'API Flash Français"}
 
+# --- Résoudre les Forward References dans les modèles Pydantic ---
+# Doit être appelé APRÈS l'import des modules contenant les modèles
+from schemas.sequence import SequenceRead, SequenceReadSimple
+from schemas.objective import ObjectiveRead
+# Importer d'autres modèles avec des forward refs si nécessaire
+
+print("Rebuilding Pydantic models...")
+SequenceRead.model_rebuild()
+SequenceReadSimple.model_rebuild()
+ObjectiveRead.model_rebuild()
+# Appeler model_rebuild() pour d'autres modèles si nécessaire
+print("Pydantic models rebuilt.")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=10000)
