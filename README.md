@@ -21,42 +21,25 @@ flash-francais/
 ## Installation
 
 ### Backend
-
 ```bash
 cd backend
-python -m venv venv
-source venv/Scripts/activate  # Sur Windows
+.\venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-```
-
-## Démarrage
-
-### Backend
-
-```bash
-cd backend
-source venv/Scripts/activate  # Sur Windows
 python app.py
 ```
-
-L'API sera disponible sur http://localhost:10000
+L API sera disponible sur http://localhost:10000
 Documentation Swagger : http://localhost:10000/docs
 
 ### Frontend
 
 ```bash
+netstat -ano | findstr :3000
+taskkill /F /PID xxxx
 cd frontend
-npm start
+npm install
 ```
-
 Le frontend sera disponible sur http://localhost:3000
+
 
 ## Base de données
 
