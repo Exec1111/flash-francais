@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 from models import Resource, Session # Import Resource model and Session for checking session_id
 from schemas.resource import ResourceCreate, ResourceUpdate # Import schemas
 from sqlalchemy import or_
+import logging
+logger = logging.getLogger(__name__)
 
 def get_resource(db: Session, resource_id: int):
     """Récupère une ressource par son ID."""
@@ -13,7 +15,24 @@ def get_resources(db: Session, skip: int = 0, limit: int = 100):
 
 def get_resources_by_session(db: Session, session_id: int, skip: int = 0, limit: int = 100):
     """Récupère les ressources appartenant à une session spécifique."""
-    return db.query(Resource).filter(Resource.session_id == session_id).offset(skip).limit(limit).all()
+    from models.resource import Resource
+    from models.association_tables import session_resource_association
+    
+    try:
+        logger.info(f"Recherche des ressources pour la session {session_id}")
+        
+        # Utiliser une jointure avec la table d'association
+        resources = db.query(Resource).\
+            join(session_resource_association, session_resource_association.c.resource_id == Resource.id).\
+            filter(session_resource_association.c.session_id == session_id).\
+            offset(skip).limit(limit).all()
+        
+        logger.info(f"Trouvé {len(resources)} ressources pour la session {session_id}")
+        return resources
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de la recherche des ressources pour la session {session_id}: {str(e)}")
+        raise
 
 def get_resources_standalone(db: Session, skip: int = 0, limit: int = 100):
     """Récupère les ressources qui ne sont liées à aucune session."""

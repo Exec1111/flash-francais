@@ -92,6 +92,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Type", "Authorization"],  # Ajout des headers exposés
 )
 
 # Inclusion des routes d'authentification
