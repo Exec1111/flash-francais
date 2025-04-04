@@ -33,7 +33,7 @@ const columns = [
     field: 'type', 
     headerName: 'Type', 
     width: 130,
-    valueFormatter: (params) => params.value.charAt(0).toUpperCase() + params.value.slice(1)
+    valueFormatter: (params) => params.value ? (params.value.value.charAt(0).toUpperCase() + params.value.value.slice(1)) : 'N/A'
   },
   { 
     field: 'description', 
@@ -232,12 +232,12 @@ const ResourceList = () => {
                 />
                 <CardContent>
                   <Typography variant="body2" color="text.secondary">
-                    Type: {resource.type}
+                    Type: {resource.type ? resource.type.value : 'N/A'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    {typeof resource.content === 'object' ? 
-                      (resource.content.url ? resource.content.url : JSON.stringify(resource.content)) :
-                      resource.content}
+                    {typeof resource.content === 'object' && resource.content !== null 
+                      ? (resource.content.url ? resource.content.url : JSON.stringify(resource.content))
+                      : (resource.content || 'Pas de contenu')}
                   </Typography>
                   <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box sx={{ display: 'flex', gap: 1 }}>

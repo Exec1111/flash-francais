@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from models import Resource, Session, User # Import Resource model, Session for checking session_id and User for checking user_id
 from schemas.resource import ResourceCreate, ResourceUpdate # Import schemas
 from sqlalchemy import or_
@@ -24,25 +24,15 @@ def get_resources(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     """Récupère une liste des ressources appartenant à un utilisateur spécifique."""
     logger.info(f"Recherche des ressources pour l'utilisateur {user_id}")
     # Récupérer les ressources avec les sessions associées, filtrées par user_id
-    resources = db.query(Resource).filter(Resource.user_id == user_id).offset(skip).limit(limit).all()
+    resources = db.query(Resource).options(
+        joinedload(Resource.sessions),
+        joinedload(Resource.type),
+        joinedload(Resource.sub_type)
+    ).filter(Resource.user_id == user_id).offset(skip).limit(limit).all()
     logger.info(f"Nombre de ressources trouvées pour l'utilisateur {user_id}: {len(resources)}")
     
-    # Créer la liste des ressources avec leurs IDs de sessions
-    resources_with_sessions = []
-    for resource in resources:
-        logger.info(f"Récupération des sessions pour la ressource {resource.id}")
-        resource_data = {
-            "id": resource.id,
-            "title": resource.title,
-            "description": resource.description,
-            "type": resource.type,
-            "content": resource.content,
-            "user_id": resource.user_id,
-            "session_ids": [session.id for session in resource.sessions]
-        }
-        resources_with_sessions.append(resource_data)
-    
-    return resources_with_sessions
+    # Retourner directement les objets SQLAlchemy
+    return resources
 
 def get_resources_by_session(db: Session, session_id: int, skip: int = 0, limit: int = 100):
     """Récupère les ressources appartenant à une session spécifique."""
@@ -52,14 +42,36 @@ def get_resources_by_session(db: Session, session_id: int, skip: int = 0, limit:
     try:
         logger.info(f"Recherche des ressources pour la session {session_id}")
         
-        # Utiliser une jointure avec la table d'association
-        resources = db.query(Resource).\
-            join(session_resource_association, session_resource_association.c.resource_id == Resource.id).\
+        # Récupérer d'abord les IDs des ressources liées à la session
+        resource_ids = db.query(session_resource_association.c.resource_id).\
             filter(session_resource_association.c.session_id == session_id).\
+            all()
+            
+        # Convertir les résultats en liste d'IDs
+        resource_ids = [id[0] for id in resource_ids]
+        
+        # Récupérer les ressources avec leurs relations
+        resources = db.query(Resource).\
+            filter(Resource.id.in_(resource_ids)).\
             offset(skip).limit(limit).all()
         
         logger.info(f"Trouvé {len(resources)} ressources pour la session {session_id}")
-        return resources
+        
+        # Convertir les objets SQLAlchemy en dictionnaires
+        resources_data = []
+        for resource in resources:
+            resource_data = {
+                "id": resource.id,
+                "title": resource.title,
+                "description": resource.description,
+                "type_id": resource.type_id,  
+                "content": resource.content,
+                "user_id": resource.user_id,
+                "session_ids": [session.id for session in resource.sessions]
+            }
+            resources_data.append(resource_data)
+        
+        return resources_data
         
     except Exception as e:
         logger.error(f"Erreur lors de la recherche des ressources pour la session {session_id}: {str(e)}")

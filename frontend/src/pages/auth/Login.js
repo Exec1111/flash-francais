@@ -29,6 +29,14 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [shouldRedirect, setShouldRedirect] = useState(false);
 
+  // Pré-remplissage des champs en mode développement
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      setEmail('student2@example.com');
+      setPassword('aa');
+    }
+  }, []);
+
   useEffect(() => {
     if (shouldRedirect) {
       navigate('/dashboard', { replace: true });
