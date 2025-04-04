@@ -13,6 +13,11 @@ import {
   CircularProgress,
   FormControlLabel,
   Switch,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button as MuiButton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -57,7 +62,9 @@ const ResourceList = () => {
   const { user } = useAuth();
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
+  const [viewMode, setViewMode] = useState('grid'); 
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+  const [resourceToDelete, setResourceToDelete] = useState(null);
   const navigate = useNavigate();
 
   // Fonction de chargement des ressources
@@ -111,8 +118,13 @@ const ResourceList = () => {
   };
 
   const handleDeleteResource = async (id) => {
+    setResourceToDelete(id);
+    setOpenConfirmDialog(true);
+  };
+
+  const confirmDelete = async () => {
     try {
-      const response = await fetch(`http://localhost:10000/api/v1/resources/${id}`, {
+      const response = await fetch(`http://localhost:10000/api/v1/resources/${resourceToDelete}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -127,7 +139,15 @@ const ResourceList = () => {
       fetchResources();
     } catch (err) {
       console.error('Erreur lors de la suppression de la ressource:', err);
+    } finally {
+      setOpenConfirmDialog(false);
+      setResourceToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setOpenConfirmDialog(false);
+    setResourceToDelete(null);
   };
 
   // Effet de chargement initial
@@ -246,6 +266,29 @@ const ResourceList = () => {
           ))}
         </Grid>
       )}
+      <Dialog
+        open={openConfirmDialog}
+        onClose={cancelDelete}
+        aria-labelledby="confirm-delete-dialog-title"
+      >
+        <DialogTitle id="confirm-delete-dialog-title">
+          Confirmation de suppression
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">
+            Êtes-vous sûr de vouloir supprimer cette ressource ?
+            Cette action est irréversible.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <MuiButton onClick={cancelDelete} color="primary">
+            Annuler
+          </MuiButton>
+          <MuiButton onClick={confirmDelete} color="error" variant="contained">
+            Supprimer
+          </MuiButton>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
