@@ -6,8 +6,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 def get_resource(db: Session, resource_id: int):
-    """Récupère une ressource par son ID."""
-    return db.query(Resource).filter(Resource.id == resource_id).first()
+    """Récupère une ressource par son ID avec ses sessions associées."""
+    resource = db.query(Resource).filter(Resource.id == resource_id).first()
+    if resource:
+        return {
+            "id": resource.id,
+            "title": resource.title,
+            "description": resource.description,
+            "type": resource.type,
+            "content": resource.content,
+            "user_id": resource.user_id,
+            "session_ids": [session.id for session in resource.sessions]
+        }
+    return None
 
 def get_resources(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     """Récupère une liste des ressources appartenant à un utilisateur spécifique."""
@@ -108,25 +119,42 @@ def create_resource(db: Session, resource: ResourceCreate):
 
 def update_resource(db: Session, resource_id: int, resource_update: ResourceUpdate):
     """Met à jour une ressource existante."""
-    db_resource = get_resource(db, resource_id=resource_id)
+    # Récupérer l'objet Resource directement depuis la base de données
+    db_resource = db.query(Resource).filter(Resource.id == resource_id).first()
     if db_resource is None:
         return None
 
     update_data = resource_update.model_dump(exclude_unset=True)
 
-    # Vérifier si le nouveau session_id (s'il est fourni) existe
-    if 'session_id' in update_data and update_data['session_id'] is not None:
-        db_session = db.query(Session).filter(Session.id == update_data['session_id']).first()
-        if not db_session:
-            raise ValueError(f"Session with id {update_data['session_id']} not found")
+    # Vérifier si les sessions existent et mettre à jour la relation
+    if 'session_ids' in update_data and update_data['session_ids'] is not None:
+        # D'abord vérifier que toutes les sessions existent
+        db_sessions = db.query(Session).filter(Session.id.in_(update_data['session_ids'])).all()
+        if len(db_sessions) != len(update_data['session_ids']):
+            raise ValueError("One or more sessions not found")
+        
+        # Mettre à jour la relation avec les sessions
+        db_resource.sessions = db_sessions
 
+    # Mettre à jour les autres champs
     for key, value in update_data.items():
-        setattr(db_resource, key, value)
+        if key != 'session_ids':
+            setattr(db_resource, key, value)
 
     db.add(db_resource)
     db.commit()
     db.refresh(db_resource)
-    return db_resource
+
+    # Retourner la ressource mise à jour avec ses sessions sous forme de dictionnaire
+    return {
+        "id": db_resource.id,
+        "title": db_resource.title,
+        "description": db_resource.description,
+        "type": db_resource.type,
+        "content": db_resource.content,
+        "user_id": db_resource.user_id,
+        "session_ids": [session.id for session in db_resource.sessions]
+    }
 
 def delete_resource(db: Session, resource_id: int):
     """Supprime une ressource par son ID."""

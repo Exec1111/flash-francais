@@ -114,7 +114,7 @@ const ResourceList = () => {
   };
 
   const handleEditResource = (id) => {
-    navigate(`/resources/${id}/edit`);
+    navigate(`/resources/edit/${id}`);
   };
 
   const handleDeleteResource = async (id) => {
