@@ -2,16 +2,17 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
+  Typography,
+  Grid,
   Card,
   CardContent,
-  CardMedia,
-  Grid,
+  CardHeader,
   IconButton,
+  Alert,
   Paper,
-  Switch,
-  Typography,
-  FormControlLabel,
   CircularProgress,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -53,31 +54,29 @@ const columns = [
 ];
 
 const ResourceList = () => {
+  const { user } = useAuth();
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   // Fonction de chargement des ressources
   const fetchResources = async () => {
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('http://localhost:10000/api/v1/resources', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error('Erreur lors du chargement des ressources');
       }
-      
+
       const data = await response.json();
       setResources(data);
-    } catch (error) {
-      console.error('Erreur lors du chargement des ressources:', error);
-      setResources([]);
+    } catch (err) {
+      console.error('Erreur lors du chargement des ressources:', err);
     } finally {
       setLoading(false);
     }
@@ -85,7 +84,26 @@ const ResourceList = () => {
 
   // Fonctions de gestion des ressources
   const handleCreateResource = () => {
-    navigate('/resources/new');
+    console.log('ResourceList: Début de la création de ressource');
+    
+    // Récupérer les données utilisateur depuis le localStorage
+    const user = localStorage.getItem('user');
+    console.log('ResourceList: Données brutes du localStorage:', user);
+    
+    const userData = user ? JSON.parse(user) : null;
+    console.log('ResourceList: Données utilisateur après parsing:', userData);
+    
+    const userId = userData?.id;
+    console.log('ResourceList: ID de l\'utilisateur trouvé:', userId);
+
+    if (!userId) {
+      console.error('ResourceList: ID utilisateur non défini');
+      return;
+    }
+
+    // Redirection vers la page de création avec l'ID de l'utilisateur
+    navigate(`/resources/new?userId=${userId}`);
+    console.log('ResourceList: Redirection vers /resources/new avec userId:', userId);
   };
 
   const handleEditResource = (id) => {
@@ -94,22 +112,21 @@ const ResourceList = () => {
 
   const handleDeleteResource = async (id) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:10000/api/v1/resources/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error('Erreur lors de la suppression de la ressource');
       }
-      
+
       // Recharger la liste après suppression
       fetchResources();
-    } catch (error) {
-      console.error('Erreur lors de la suppression de la ressource:', error);
+    } catch (err) {
+      console.error('Erreur lors de la suppression de la ressource:', err);
     }
   };
 
@@ -128,30 +145,36 @@ const ResourceList = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h5" gutterBottom>
-            Mes Ressources
-          </Typography>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={viewMode === 'table'}
-                onChange={(e) => setViewMode(e.target.checked ? 'table' : 'grid')}
-                name="viewMode"
-              />
-            }
-            label="Vue Table"
-          />
-        </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleCreateResource}
-        >
-          Nouvelle Ressource
-        </Button>
+      <Box sx={{ mb: 3 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item>
+            <Typography variant="h6" component="h2">
+              Mes Ressources
+            </Typography>
+          </Grid>
+          <Grid item xs="auto">
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={handleCreateResource}
+            >
+              Nouvelle ressource
+            </Button>
+          </Grid>
+          <Grid item xs="auto">
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={viewMode === 'table'}
+                  onChange={(e) => setViewMode(e.target.checked ? 'table' : 'grid')}
+                  name="viewMode"
+                />
+              }
+              label="Vue Table"
+            />
+          </Grid>
+        </Grid>
       </Box>
 
       {viewMode === 'table' ? (
@@ -183,23 +206,20 @@ const ResourceList = () => {
           {resources.map((resource) => (
             <Grid item xs={12} sm={6} md={4} key={resource.id}>
               <Card>
-                <CardMedia
-                  component="img"
-                  height="140"
-                  image={resource.content?.url || '/placeholder.jpg'}
-                  alt={resource.title}
+                <CardHeader
+                  title={resource.title}
+                  subheader={resource.description}
                 />
                 <CardContent>
-                  <Typography gutterBottom variant="h6" component="div">
-                    {resource.title}
-                  </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {resource.description}
+                    Type: {resource.type}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    {typeof resource.content === 'object' ? 
+                      (resource.content.url ? resource.content.url : JSON.stringify(resource.content)) :
+                      resource.content}
                   </Typography>
                   <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body2" color="primary">
-                      {resource.type}
-                    </Typography>
                     <Box sx={{ display: 'flex', gap: 1 }}>
                       <IconButton 
                         size="small" 

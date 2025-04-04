@@ -17,6 +17,7 @@ import Dashboard from './pages/Dashboard';
 import ResourceList from './components/resources/ResourceList';
 import Contact from './pages/Contact';
 import { useAuth } from './contexts/AuthContext';
+import NewResource from './pages/resources/NewResource';
 
 // --- Composant de Layout Protégé ---
 function ProtectedLayout() {
@@ -129,8 +130,8 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<ResourceList />} />
-        <Route path="new" element={<ResourceList />} />
+        <Route index element={<ResourceList session={useAuth()} />} />
+        <Route path="new" element={<NewResource />} />
       </Route>
 
       {/* Redirection par défaut */}
