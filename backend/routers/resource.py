@@ -5,6 +5,10 @@ from typing import List
 from database import get_db
 import crud
 from schemas.resource import ResourceCreate, ResourceRead, ResourceUpdate
+from models.user import User
+from security import get_current_active_user
+import logging
+logger = logging.getLogger(__name__)
 
 resource_router = APIRouter(
     # prefix="/resources", # Supprimé car géré dans app.py
@@ -21,8 +25,16 @@ def create_resource_route(resource: ResourceCreate, db: Session = Depends(get_db
         raise HTTPException(status_code=404, detail=str(e))
 
 @resource_router.get("/", response_model=List[ResourceRead])
-def read_resources_route(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    resources = crud.get_resources(db, skip=skip, limit=limit)
+def read_resources_route(
+    skip: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Récupère les ressources appartenant à l'utilisateur connecté."""
+    logger.info(f"Récupération des ressources pour l'utilisateur {current_user.id}")
+    resources = crud.get_resources(db, user_id=current_user.id, skip=skip, limit=limit)
+    logger.info(f"Nombre de ressources trouvées : {len(resources)}")
     return resources
 
 @resource_router.get("/standalone", response_model=List[ResourceRead])

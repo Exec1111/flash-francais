@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models import Resource, Session # Import Resource model and Session for checking session_id
+from models import Resource, Session, User # Import Resource model, Session for checking session_id and User for checking user_id
 from schemas.resource import ResourceCreate, ResourceUpdate # Import schemas
 from sqlalchemy import or_
 import logging
@@ -9,9 +9,29 @@ def get_resource(db: Session, resource_id: int):
     """Récupère une ressource par son ID."""
     return db.query(Resource).filter(Resource.id == resource_id).first()
 
-def get_resources(db: Session, skip: int = 0, limit: int = 100):
-    """Récupère une liste de toutes les ressources (liées ou non à une session)."""
-    return db.query(Resource).offset(skip).limit(limit).all()
+def get_resources(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+    """Récupère une liste des ressources appartenant à un utilisateur spécifique."""
+    logger.info(f"Recherche des ressources pour l'utilisateur {user_id}")
+    # Récupérer les ressources avec les sessions associées, filtrées par user_id
+    resources = db.query(Resource).filter(Resource.user_id == user_id).offset(skip).limit(limit).all()
+    logger.info(f"Nombre de ressources trouvées pour l'utilisateur {user_id}: {len(resources)}")
+    
+    # Créer la liste des ressources avec leurs IDs de sessions
+    resources_with_sessions = []
+    for resource in resources:
+        logger.info(f"Récupération des sessions pour la ressource {resource.id}")
+        resource_data = {
+            "id": resource.id,
+            "title": resource.title,
+            "description": resource.description,
+            "type": resource.type,
+            "content": resource.content,
+            "user_id": resource.user_id,
+            "session_ids": [session.id for session in resource.sessions]
+        }
+        resources_with_sessions.append(resource_data)
+    
+    return resources_with_sessions
 
 def get_resources_by_session(db: Session, session_id: int, skip: int = 0, limit: int = 100):
     """Récupère les ressources appartenant à une session spécifique."""
@@ -40,19 +60,51 @@ def get_resources_standalone(db: Session, skip: int = 0, limit: int = 100):
 
 def create_resource(db: Session, resource: ResourceCreate):
     """Crée une nouvelle ressource."""
-    # Vérifier si session_id est fourni et s'il correspond à une session existante
-    if resource.session_id is not None:
-        db_session = db.query(Session).filter(Session.id == resource.session_id).first()
-        if not db_session:
-            # Gérer l'erreur : Session non trouvée
-            # On pourrait lever une exception ou retourner None/False
-            raise ValueError(f"Session with id {resource.session_id} not found") # Exemple d'exception
+    # Vérifier si l'utilisateur existe
+    if resource.user_id is not None:
+        db_user = db.query(User).filter(User.id == resource.user_id).first()
+        if not db_user:
+            raise ValueError(f"User with id {resource.user_id} not found")
 
-    db_resource = Resource(**resource.model_dump())
+    # Vérifier si les sessions existent
+    if resource.session_ids:
+        db_sessions = db.query(Session).filter(Session.id.in_(resource.session_ids)).all()
+        if len(db_sessions) != len(resource.session_ids):
+            raise ValueError("One or more sessions not found")
+
+    # Créer la ressource
+    db_resource = Resource(
+        title=resource.title,
+        description=resource.description,
+        type=resource.type,
+        content=resource.content,
+        user_id=resource.user_id
+    )
+    
+    # Ajouter la ressource à la base de données
     db.add(db_resource)
     db.commit()
     db.refresh(db_resource)
-    return db_resource
+    
+    # Ajouter les relations avec les sessions
+    if resource.session_ids:
+        for session_id in resource.session_ids:
+            db_resource.sessions.append(db.query(Session).get(session_id))
+        db.commit()
+        db.refresh(db_resource)
+    
+    # Créer la réponse avec les IDs des sessions
+    response_data = {
+        "id": db_resource.id,
+        "title": db_resource.title,
+        "description": db_resource.description,
+        "type": db_resource.type,
+        "content": db_resource.content,
+        "user_id": db_resource.user_id,
+        "session_ids": [session.id for session in db_resource.sessions]
+    }
+    
+    return response_data
 
 def update_resource(db: Session, resource_id: int, resource_update: ResourceUpdate):
     """Met à jour une ressource existante."""
