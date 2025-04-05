@@ -1,3 +1,9 @@
+import os
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement AVANT d'importer les autres modules
+load_dotenv()
+
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -6,7 +12,15 @@ import logging
 
 from database import get_db, engine, Base
 from config import get_settings, Settings
-from routers import auth_router, progression_router, sequence_router, session_router, resource_router, objective_router
+from routers.auth import auth_router
+from routers.progression import progression_router
+from routers.sequence import sequence_router
+from routers.session import session_router
+from routers.resource import resource_router
+from routers.objective import objective_router
+from routers.user import user_router
+from schemas.sequence import SequenceRead, SequenceReadSimple
+from schemas.objective import ObjectiveRead
 
 # Création des tables dans la base de données
 Base.metadata.create_all(bind=engine)
@@ -78,48 +92,56 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Type", "Authorization"],  # Ajout des headers exposés
 )
 
 # Inclusion des routes d'authentification
 app.include_router(
     auth_router,
-    prefix=f"{settings.API_V1_PREFIX}/auth",
+    prefix="/api/v1/auth",
     tags=["auth"]
 )
 
 # Inclusion des routes de progression
 app.include_router(
     progression_router,
-    prefix=f"{settings.API_V1_PREFIX}/progressions",
+    prefix="/api/v1/progressions",
     tags=["progressions"]
 )
 
 # Inclusion des routes de séquence
 app.include_router(
     sequence_router,
-    prefix=f"{settings.API_V1_PREFIX}/sequences", 
+    prefix="/api/v1/sequences",
     tags=["sequences"]
 )
 
 # Inclusion des routes de session
 app.include_router(
     session_router,
-    prefix=f"{settings.API_V1_PREFIX}/sessions",
+    prefix="/api/v1/sessions",
     tags=["sessions"]
 )
 
 # Inclusion des routes de ressource
 app.include_router(
     resource_router,
-    prefix=f"{settings.API_V1_PREFIX}/resources",
+    prefix="/api/v1/resources",
     tags=["resources"]
 )
 
 # Inclusion des routes d'objectif
 app.include_router(
     objective_router,
-    prefix=f"{settings.API_V1_PREFIX}/objectives",
+    prefix="/api/v1/objectives",
     tags=["objectives"]
+)
+
+# Inclusion des routes d'utilisateur
+app.include_router(
+    user_router,
+    prefix="/api/v1/users",
+    tags=["users"]
 )
 
 # Route de test
@@ -133,9 +155,6 @@ def root():
 
 # --- Résoudre les Forward References dans les modèles Pydantic ---
 # Doit être appelé APRÈS l'import des modules contenant les modèles
-from schemas.sequence import SequenceRead, SequenceReadSimple
-from schemas.objective import ObjectiveRead
-# Importer d'autres modèles avec des forward refs si nécessaire
 
 print("Rebuilding Pydantic models...")
 SequenceRead.model_rebuild()

@@ -30,6 +30,19 @@ class UserResponse(UserBase):
     class Config:
         from_attributes = True
 
+class UserRead(BaseModel):
+    id: int
+    email: str
+    first_name: str
+    last_name: str
+    role: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
 class Token(BaseModel):
     access_token: str
     token_type: str

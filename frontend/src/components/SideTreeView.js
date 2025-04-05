@@ -1,12 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Drawer, IconButton, Box, Typography, useTheme, Tooltip, CircularProgress } from '@mui/material';
+import { Drawer, IconButton, Box, Typography, useTheme, Tooltip, CircularProgress, Divider } from '@mui/material';
 import { 
-  Menu as MenuIcon, 
+  Menu as MenuIcon,
   ChevronLeft as ChevronLeftIcon, 
   Description as DescriptionIcon, 
-  CheckCircleOutline as CheckCircleOutlineIcon, 
-  ExpandMore as ExpandMoreIcon, 
-  ChevronRight as ChevronRightIcon,
   Checklist as ChecklistIcon,
   AccountTree as AccountTreeIcon,
   FormatListBulleted as FormatListBulletedIcon,
@@ -16,10 +13,13 @@ import {
   FitnessCenter as ExerciseIcon 
 } from '@mui/icons-material';
 import { SimpleTreeView, TreeItem } from '@mui/x-tree-view'; 
- 
-export const drawerWidth = 480;
+import ResourceButton from './resources/ResourceButton';
+import { useAuth } from '../contexts/AuthContext';
+
+export const drawerWidth = 480;  
 
 function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
+  const { user } = useAuth();
   const theme = useTheme();
   const [treeData, setTreeData] = useState({ id: 'root', name: 'Progressions', type: 'root', children: [] }); 
   const [isLoading, setIsLoading] = useState(true);
@@ -77,7 +77,12 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch('http://localhost:10000/api/v1/progressions'); 
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:10000/api/v1/progressions', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }); 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -87,9 +92,8 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
           id: prog.id,
           name: prog.title, 
           type: 'progression', 
-          description: prog.description, // Garder la description si besoin ailleurs
-          // Ajouter un enfant factice pour que l'icône d'expansion s'affiche
-          children: [{ id: `loading-${prog.id}`, name: 'Chargement...', type: 'loading' }] // Dummy child for sessions
+          description: prog.description,
+          children: [{ id: `loading-${prog.id}`, name: 'Chargement...', type: 'loading' }]
         }));
 
         console.log("Données formatées pour TreeView:", formattedProgressions);
@@ -103,7 +107,7 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
     };
 
     fetchData();
-  }, []); 
+  }, [user?.id]);  
 
   const renderedTreeNodes = React.useMemo(() => {
     // Helper function to render the tree recursively
@@ -266,7 +270,12 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
       console.log(`CONDITION REMPLIE pour PROGRESSION ${newlyExpandedItemId}. Chargement des séquences...`); // LOG 4
       (async () => {
         try {
-          const response = await fetch(`http://localhost:10000/api/v1/sequences/by_progression/${newlyExpandedItemId}`);
+          const token = localStorage.getItem('token');
+          const response = await fetch(`http://localhost:10000/api/v1/sequences/by_progression/${newlyExpandedItemId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -295,7 +304,12 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
       console.log(`CONDITION REMPLIE pour SÉQUENCE ${newlyExpandedItemId}. Chargement des séances...`); 
       (async () => {
         try {
-          const response = await fetch(`http://localhost:10000/api/v1/sessions/by_sequence/${newlyExpandedItemId}`);
+          const token = localStorage.getItem('token');
+          const response = await fetch(`http://localhost:10000/api/v1/sessions/by_sequence/${newlyExpandedItemId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -322,7 +336,12 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
       console.log(`CONDITION REMPLIE pour SÉANCE ${newlyExpandedItemId}. Chargement des ressources...`); 
       (async () => {
         try {
-          const response = await fetch(`http://localhost:10000/api/v1/resources/by_session/${newlyExpandedItemId}`);
+          const token = localStorage.getItem('token');
+          const response = await fetch(`http://localhost:10000/api/v1/resources/by_session/${newlyExpandedItemId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -349,42 +368,66 @@ function SideTreeView({ open, handleDrawerOpen, handleDrawerClose }) {
   };
 
   return (
-    <>
-      <IconButton onClick={open ? handleDrawerClose : handleDrawerOpen}>
-          {open ? <ChevronLeftIcon /> : <MenuIcon />}
-      </IconButton>
-
-      <Drawer
-        sx={{
+    <Drawer
+      sx={{
+        width: drawerWidth,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
           width: drawerWidth,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-            top: '64px', 
-            height: 'calc(100% - 64px)',
-          },
+          boxSizing: 'border-box',
+          top: '64px', 
+          height: 'calc(100% - 64px)',
+        },
+      }}
+      variant="persistent"
+      anchor="left"
+      open={open}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '16px',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
         }}
-        variant="persistent"
-        anchor="left"
-        open={open}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', padding: theme.spacing(0, 2), ...theme.mixins.toolbar, justifyContent: 'flex-end' }}>
-           <Typography variant="h6" sx={{ flexGrow: 1, textAlign: 'center' }}>Navigation</Typography>
-        </Box>
+        <IconButton onClick={open ? handleDrawerClose : handleDrawerOpen}>
+          {open ? <ChevronLeftIcon /> : <MenuIcon />}
+        </IconButton>
+        <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          Navigation
+        </Typography>
+      </Box>
 
-        <SimpleTreeView
-          aria-label="progressions tree"
-          sx={{ flexGrow: 1, width: '100%', overflowY: 'auto', padding: 1 }} 
-          expanded={expandedItems} 
-          onExpandedItemsChange={handleExpandedItemsChange} 
-        >
-          {isLoading && <Typography sx={{ p: 2 }}>Chargement...</Typography>}
-          {error && <Typography color="error" sx={{ p: 2 }}>{error}</Typography>}
-          {!isLoading && !error && renderedTreeNodes} 
-        </SimpleTreeView>
-      </Drawer>
-    </>
+      <Box sx={{ p: 2 }}>
+        <ResourceButton />
+      </Box>
+
+      <Divider sx={{ my: 2 }} />
+
+      <Box sx={{ overflow: 'auto', height: 'calc(100vh - 120px)' }}>
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', pt: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Box sx={{ p: 2 }}>
+            <Typography color="error">{error}</Typography>
+          </Box>
+        ) : (
+          <SimpleTreeView
+            aria-label="progressions tree"
+            sx={{ flexGrow: 1, width: '100%', overflowY: 'auto', padding: 1 }} 
+            expanded={expandedItems} 
+            onExpandedItemsChange={handleExpandedItemsChange} 
+          >
+            {renderedTreeNodes} 
+          </SimpleTreeView>
+        )}
+      </Box>
+    </Drawer>
   );
 }
 

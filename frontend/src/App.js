@@ -4,51 +4,21 @@ import {
   Route,
   Navigate,
   Outlet,
-  useNavigate, // Importer useNavigate
+  useNavigate,
+  useLocation,
 } from 'react-router-dom';
-import { Box, Button, Typography, AppBar, Toolbar, IconButton } from '@mui/material'; 
-import { Menu as MenuIcon } from '@mui/icons-material'; // Importer MenuIcon pour l'AppBar
-import theme from './theme'; // Garder l'import de theme s'il est utilisé ailleurs
-import SideTreeView, { drawerWidth } from './components/SideTreeView'; // Importer drawerWidth
+import { Box, Button, Typography } from '@mui/material'; 
+import SideTreeView, { drawerWidth } from './components/SideTreeView';
 import LandingPage from './pages/LandingPage';
-import Login from './pages/auth/Login';
+import Login from './pages/auth/Login'; 
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import Dashboard from './pages/Dashboard';
-import authService from './services/auth';
-
-// --- Simulation simple de l'authentification ---
-let authStatus = false; // Remplacez par votre logique d'auth réelle
-const login = () => { authStatus = true; };
-const logout = () => { authStatus = false; };
-const isAuthenticated = () => authStatus;
-// ----------------------------------------------
-
-// --- Composants de page simples ---
-function LoginPage() {
-  const navigate = useNavigate(); // Obtenir la fonction de navigation
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-      <Typography variant="h4">Page de Login</Typography>
-      {/* Utiliser navigate au lieu de window.location.href */}
-      <Button variant="contained" onClick={() => { login(); navigate('/dashboard'); }}>Se connecter (Simulation)</Button>
-    </Box>
-  );
-}
-
-function DashboardPage() {
-  const navigate = useNavigate(); // Ajouter aussi ici pour le bouton logout
-  return (
-    <Box>
-      <Typography variant="h4">Tableau de Bord</Typography>
-      <Typography>Contenu principal du tableau de bord...</Typography>
-      {/* Les autres composants du dashboard viendront ici */}
-      {/* Utiliser navigate aussi pour la déconnexion simulée */}
-      <Button variant="outlined" onClick={() => { logout(); navigate('/login'); }}>Se déconnecter</Button>
-    </Box>
-  );
-}
-// ---------------------------------
+import ResourceList from './components/resources/ResourceList';
+import Contact from './pages/Contact';
+import { useAuth } from './contexts/AuthContext';
+import NewResource from './pages/resources/NewResource';
+import ResourceEdit from './pages/resources/ResourceEdit';
 
 // --- Composant de Layout Protégé ---
 function ProtectedLayout() {
@@ -89,7 +59,7 @@ function ProtectedLayout() {
       >
         {/* Barre d'application optionnelle (pour le bouton menu si drawer fermé) */}
         {/* Vous pouvez décommenter et styliser une AppBar si besoin */}
-        {/*
+        {/**
         <AppBar position="fixed" sx={{ width: `calc(100% - ${open ? drawerWidth : 0}px)`, ml: `${open ? drawerWidth : 0}px`, transition: theme.transitions.create(['margin', 'width'], { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.leavingScreen }) }}>
           <Toolbar>
             <IconButton
@@ -119,9 +89,9 @@ function ProtectedLayout() {
 
 // --- Composant de Route Protégée ---
 function ProtectedRoute({ children }) {
-  // Utiliser la fonction de simulation isAuthenticated pour la cohérence
-  if (!isAuthenticated()) { 
-    // Redirige vers la page de login si non authentifié
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) { 
     return <Navigate to="/login" replace />;
   }
   return children;
@@ -129,15 +99,19 @@ function ProtectedRoute({ children }) {
 // ---------------------------------
 
 function App() {
+  const { isAuthenticated } = useAuth();
+  console.log('App: État d\'authentification:', isAuthenticated);
+
   return (
     <Routes>
-      {/* Route pour la page publique LandingPage (exemple) */}
+      {/* Routes publiques */}
       <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/auth/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
-      {/* Routes protégées utilisant le ProtectedLayout */}
+      {/* Routes protégées */}
       <Route
         path="/dashboard"
         element={
@@ -146,15 +120,24 @@ function App() {
           </ProtectedRoute>
         }
       >
-         {/* Route enfant pour le contenu du Dashboard */}
         <Route index element={<Dashboard />} />
-         {/* Ajoutez d'autres routes enfants du dashboard ici si nécessaire */}
-         {/* exemple: <Route path="settings" element={<SettingsPage />} /> */}
+      </Route>
+
+      <Route
+        path="/resources"
+        element={
+          <ProtectedRoute>
+            <ProtectedLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<ResourceList session={useAuth()} />} />
+        <Route path="new" element={<NewResource />} />
+        <Route path="edit/:id" element={<ResourceEdit />} />
       </Route>
 
       {/* Redirection par défaut */}
-      {/* Utiliser la fonction de simulation isAuthenticated ici aussi */}
-      <Route path="*" element={<Navigate to={isAuthenticated() ? "/dashboard" : "/login"} replace />} />
+      <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />} />
     </Routes>
   );
 }

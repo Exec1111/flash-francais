@@ -1,36 +1,95 @@
+import os
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement AVANT d'importer database.py
+load_dotenv()
+
 import logging
 import random
 from datetime import date, timedelta
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine, Base
-from models import Progression, Objective, Sequence, Session as SessionModel, Resource, User # Import des modèles principaux
-from models.resource import ResourceType # Import de l'Enum depuis son module spécifique
-from models.association_tables import session_objective_association, sequence_objective_association # Table Progression-Sequence non définie ici
+from models import Progression, Objective, Sequence, Session as SessionModel, Resource, User, UserRole
+from models.resource import ResourceType
+from models.association_tables import session_objective_association, sequence_objective_association
+from sqlalchemy import text
 
+# Configuration du logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Afficher les informations de connexion
+logger.info("\n=== Configuration de la base de données ===")
+logger.info(f"Environnement : {os.environ.get('ENV', 'unknown')}")
+logger.info(f"URL de base de données : {os.environ.get('DATABASE_URL', 'non définie')}")
+
 def clear_existing_data(db: Session):
-    """Supprime les données existantes (sauf utilisateurs)."""
-    logger.info("Suppression des anciennes données (sauf utilisateurs)...")
+    """Supprime les données existantes."""
+    logger.info("Suppression des anciennes données...")
+    
     try:
-        # Supprimer les liens où les tables d'association sont explicitement définies
-        db.execute(session_objective_association.delete()) # Nom corrigé
-        db.execute(sequence_objective_association.delete()) # Nom corrigé
-        # db.execute(progression_sequence_association.delete()) # Cette table n'est pas définie ici
+        # Supprimer les associations d'abord
+        logger.info("Suppression des associations...")
+        db.execute(text("DELETE FROM session_resource"))
+        db.execute(text("DELETE FROM sequence_objective_association"))
+        db.execute(text("DELETE FROM session_objective_association"))
+        
+        # Supprimer les données des tables dans l'ordre inverse des dépendances
+        logger.info("Suppression des séances...")
+        db.query(SessionModel).delete()  # Supprime les séances qui dépendent des séquences
+        
+        logger.info("Suppression des séquences...")
+        db.query(Sequence).delete()  # Supprime les séquences qui dépendent des progressions
+        
+        logger.info("Suppression des progressions...")
+        db.query(Progression).delete()  # Supprime toutes les progressions
+        
+        logger.info("Suppression des ressources...")
+        db.query(Resource).delete()
+        
+        logger.info("Suppression des objectifs...")
+        db.query(Objective).delete()
+        
+        logger.info("Suppression des utilisateurs...")
+        db.query(User).delete()
+        
         db.commit()
-        # La suppression en cascade devrait gérer les liens Progression-Sequence lors de la suppression des Progressions/Sequences
-        db.query(Resource).delete(synchronize_session=False)
-        db.query(SessionModel).delete(synchronize_session=False)
-        db.query(Sequence).delete(synchronize_session=False)
-        db.query(Objective).delete(synchronize_session=False)
-        db.query(Progression).delete(synchronize_session=False)
-        db.commit()
-        logger.info("Anciennes données supprimées.")
+        logger.info("Données supprimées avec succès.")
     except Exception as e:
-        logger.error(f"Erreur lors de la suppression des anciennes données: {e}")
+        logger.error(f"Erreur lors de la suppression des données: {e}")
         db.rollback()
-        raise # Propage l'erreur pour arrêter le script
+        raise
+
+def create_test_users(db: Session):
+    """Crée des utilisateurs de test."""
+    users = [
+        User(
+            email="teacher1@example.com",
+            first_name="John",
+            last_name="Doe",
+            hashed_password="hashed_password_1",
+            role=UserRole.TEACHER,
+            is_active=True
+        ),
+        User(
+            email="student1@example.com",
+            first_name="Alice",
+            last_name="Smith",
+            role=UserRole.STUDENT,
+            is_active=True
+        ),
+        User(
+            email="student2@example.com",
+            first_name="Bob",
+            last_name="Johnson",
+            role=UserRole.STUDENT,
+            is_active=True
+        )
+    ]
+    
+    db.add_all(users)
+    db.commit()
+    return users
 
 def populate_database():
     db: Session = SessionLocal()
@@ -38,9 +97,34 @@ def populate_database():
         logger.info("Début du peuplement de la base de données...")
         clear_existing_data(db)
 
-        # --- Création des données fictives --- 
-
-        # 1. Objectifs
+        # 1. Créer les utilisateurs
+        logger.info("Création des utilisateurs...")
+        users = create_test_users(db)
+        
+        # 2. Créer les progressions
+        logger.info("Création des progressions...")
+        progressions_data = [
+            ("Parcours Débutant A1", "Niveau A1 complet"),
+            ("Parcours Intermédiaire A2", "Niveau A2 complet"),
+            ("Parcours Avancé B1", "Niveau B1 complet"),
+            ("Module : Grammaire Passé", "Focus sur Passé Composé et Imparfait"),
+            ("Module : Voyage et Culture", "Préparation et découverte")
+        ]
+        
+        progressions = []
+        for title, description in progressions_data:
+            progression = Progression(
+                title=title,
+                description=description,
+                user=users[0]  # Créé par le premier enseignant
+            )
+            progressions.append(progression)
+        
+        db.add_all(progressions)
+        db.commit()
+        
+        # 3. Créer les objectifs
+        logger.info("Création des objectifs...")
         objectives_data = [
             ("Comprendre le présent", "Savoir conjuguer les verbes ER"),
             ("Vocabulaire : La nourriture", "Connaître 20 mots courants"),
@@ -63,77 +147,35 @@ def populate_database():
             ("Vocabulaire : Les transports", "Moyens de transport courants"),
             ("Culture : Monuments de Paris", "Identifier 5 monuments")
         ]
-        objectives = [Objective(title=t, description=d) for t, d in objectives_data]
+        objectives = [Objective(title=t, description=d, user=users[0]) for t, d in objectives_data]  # Créés par le premier enseignant
         db.add_all(objectives)
-        db.commit() # Commit pour obtenir les IDs des objectifs
-        logger.info(f"{len(objectives)} Objectifs créés.")
-        obj_map = {obj.title: obj for obj in objectives} # Pour accès facile par titre
-
-        # 2. Progressions (créées avant les séquences)
-        progressions_data = [
-            ("Parcours Débutant A1", "Niveau A1 complet"),
-            ("Parcours Intermédiaire A2", "Niveau A2 complet"),
-            ("Parcours Avancé B1", "Niveau B1 complet"),
-            ("Module : Grammaire Passé", "Focus sur Passé Composé et Imparfait"),
-            ("Module : Voyage et Culture", "Préparation et découverte")
+        db.commit()
+        
+        # 4. Créer les séquences avec leurs progressions
+        logger.info("Création des séquences...")
+        sequence_titles = [
+            "Séquence 1 : Présentation de soi",
+            "Séquence 2 : La vie quotidienne",
+            "Séquence 3 : Les activités",
+            "Séquence 4 : Le temps libre",
+            "Séquence 5 : Le voyage en France"
         ]
-        progressions = [Progression(title=t, description=d) for t, d in progressions_data]
-        db.add_all(progressions)
-        db.commit() # Commit pour obtenir les IDs des progressions
-        logger.info(f"{len(progressions)} Progressions créées.")
-        prog_map = {prog.title: prog for prog in progressions} # Pour accès facile
-        prog_ids = [p.id for p in progressions]
-
-        # 3. Séquences (créées APRES les progressions, avec progression_id)
-        sequences_data = [
-            # Titre, Description, Titres Objectifs, Titre Progression Parente (Optionnel)
-            ("A1.1 Introduction", "Les bases absolues", ["Comprendre le présent", "Vocabulaire : La nourriture", "Grammaire : Les articles"], "Parcours Débutant A1"),
-            ("A1.2 Premiers pas", "Communication simple", ["Exprimer ses goûts", "Adjectifs possessifs", "Négation simple"], "Parcours Débutant A1"),
-            ("A2.1 Le passé", "Raconter des événements", ["Passé composé : auxiliaire AVOIR", "Passé composé : auxiliaire ÊTRE", "Imparfait : formation"], "Parcours Intermédiaire A2"),
-            ("A2.2 Descriptions", "Décrire des personnes et lieux", ["Vocabulaire : Les vêtements", "Vocabulaire : La famille", "Prépositions de lieu"], "Parcours Intermédiaire A2"),
-            ("B1.1 Vers l'autonomie", "Exprimer son opinion", ["Futur simple", "Pronoms COD", "Pronoms COI"], "Parcours Avancé B1"),
-            ("B1.2 Structures avancées", "Hypothèses et conditions", ["Conditionnel présent", "Subjonctif présent : introduction"], "Parcours Avancé B1"),
-            ("Thème : Voyage", "Préparer un voyage", ["Vocabulaire : Les transports", "Questions simples"], "Module : Voyage et Culture"),
-            ("Thème : Culture", "Découverte culturelle", ["Culture : Monuments de Paris"], "Module : Voyage et Culture"),
-            # Séquence orpheline pour tester
-            ("Orpheline : Adverbes", "Formation des adverbes en -ment", ["Comprendre le présent"], None) 
-        ]
+        
         sequences = []
-        for title, desc, obj_titles, prog_title in sequences_data:
-            seq_objectives = [obj_map[t] for t in obj_titles if t in obj_map]
-            current_prog_id = prog_map[prog_title].id if prog_title and prog_title in prog_map else None
-            
-            # Gérer le cas où la progression parente est None mais que la colonne est NOT NULL
-            # Si la colonne EST nullable, current_prog_id = None est ok
-            # Si la colonne est NOT NULL, il faut assigner une progression par défaut ou lever une erreur
-            # Ici, on choisit une progression aléatoire si prog_title est None et que la colonne semble NOT NULL
-            if current_prog_id is None:
-                logger.warning(f"Sequence '{title}' n'a pas de progression parente définie. Assignation aléatoire car progression_id semble NOT NULL.")
-                current_prog_id = random.choice(prog_ids) # Assignation aléatoire
-                # Alternative : lever une erreur si une séquence doit absolument avoir une progression
-                # raise ValueError(f"Sequence '{title}' doit avoir une progression parente définie.")
-                
-            sequences.append(Sequence(title=title, description=desc, objectives=seq_objectives, progression_id=current_prog_id))
-            
+        for i, title in enumerate(sequence_titles):
+            sequence = Sequence(
+                title=title,
+                description=f"Description de la séquence {title}",
+                user=users[0],  # Créé par le premier enseignant
+                progression=progressions[i % len(progressions)]  # Associer à une progression
+            )
+            sequences.append(sequence)
+        
         db.add_all(sequences)
-        db.commit() # Commit pour obtenir les IDs des séquences
-        logger.info(f"{len(sequences)} Séquences créées.")
-        sequence_ids = [s.id for s in sequences] # Récupérer les IDs des séquences
+        db.commit()
         
-        # 4. Mettre à jour les progressions avec leurs séquences (si nécessaire et si la relation est bidirectionnelle)
-        # Si la relation Progression.sequences est définie avec back_populates='progression',
-        # SQLAlchemy devrait gérer cela automatiquement. Sinon, on peut le faire manuellement:
-        # for prog in progressions:
-        #     prog.sequences = [s for s in sequences if s.progression_id == prog.id]
-        # db.commit()
-        # logger.info("Liens Progression -> Sequences mis à jour.")
-        
-        # 5. Sessions (comme avant, mais après les objectifs et avec sequence_id)
-        if not sequence_ids:
-             logger.error("Aucune séquence n'a été créée, impossible de créer des sessions.")
-             return # Ou lever une exception
-        
-        sessions = []
+        # 5. Créer les séances
+        logger.info("Création des séances...")
         start_date = date(2024, 1, 10)
         session_titles_templates = [
             "Leçon {}: {}",
@@ -143,58 +185,84 @@ def populate_database():
         ]
         all_objective_ids = [o.id for o in objectives]
         
-        for i in range(50): # Créer 50 sessions
+        sessions = []
+        for i in range(50):
             template = random.choice(session_titles_templates)
-            # Utiliser un objectif aléatoire pour le titre pour plus de variété
-            random_objective_title = random.choice([o.title for o in objectives]) if objectives else f"Thème {i+1}"
+            random_objective_title = random.choice([o.title for o in objectives])
             session_title = template.format(i + 1, random_objective_title)
-            session_date = start_date + timedelta(days=random.randint(0, 365*1)) # Dates sur 1 an
+            session_date = start_date + timedelta(days=random.randint(0, 365*1))
             
-            # Sélectionne 1 à 3 objectifs aléatoires pour cette session
             num_objectives = random.randint(1, 3)
             session_objectives_ids = random.sample(all_objective_ids, min(num_objectives, len(all_objective_ids)))
-            # Récupérer les objets Objective correspondants
             session_objectives = db.query(Objective).filter(Objective.id.in_(session_objectives_ids)).all()
             
-            # Assigner un sequence_id valide
-            assigned_sequence_id = random.choice(sequence_ids)
+            assigned_sequence = random.choice(sequences)
             
             sessions.append(SessionModel(
                 title=session_title,
                 date=session_date,
                 objectives=session_objectives,
-                sequence_id=assigned_sequence_id # Assignation ici
+                sequence=assigned_sequence,
+                user=users[0]  # Créé par le premier enseignant
             ))
-            
-        db.add_all(sessions)
-        db.commit() # Commit pour obtenir les IDs des sessions
-        logger.info(f"{len(sessions)} Sessions créées.")
-        session_ids = [s.id for s in sessions] # Récupérer les IDs des sessions
         
-        # Ressources (une par session pour l'exemple)
+        db.add_all(sessions)
+        db.commit()
+        
+        # 6. Créer les ressources
+        logger.info("Création des ressources...")
         resources = []
-        for sess in sessions:
-            # Assurer que le type correspond à l'Enum ResourceType défini dans le modèle
-            res_type_enum = random.choice(list(ResourceType))
-            res_title = f"{res_type_enum.value.capitalize()} pour {sess.title[:30]}..."
-            res_url = f"http://example.com/{res_type_enum.value}/{sess.id}" # Générer une URL fictive
-            # Utiliser le champ 'description' pour stocker l'URL (faute de champ 'link' ou 'url')
-            resources.append(Resource(type=res_type_enum, title=res_title, description=res_url, session_id=sess.id))
+        resource_types = list(ResourceType)
+        
+        for i in range(20):
+            res_type = random.choice(resource_types)
+            resources.append(Resource(
+                type=res_type,
+                title=f"Ressource {res_type.value} {i+1}",
+                description=f"Description de la ressource {i+1}",
+                content={
+                    "url": f"http://example.com/{res_type.value}/resource_{i+1}",
+                    "type": res_type.value
+                },
+                user=users[0]  # Créé par le premier enseignant
+            ))
         
         db.add_all(resources)
         db.commit()
-        logger.info(f"{len(resources)} Ressources créées.")
-
+        
+        # 7. Associer les ressources aux séances
+        logger.info("Association des ressources aux séances...")
+        for sess in sessions:
+            num_resources = random.randint(1, 3)
+            selected_resources = random.sample(resources, num_resources)
+            sess.resources.extend(selected_resources)
+            db.add(sess)
+        
+        db.commit()
+        
+        # 8. Créer des progressions pour les étudiants
+        logger.info("Création des progressions pour les étudiants...")
+        for student in users[1:]:  # Pour chaque étudiant
+            for sequence in sequences:
+                progression = Progression(
+                    title=f"Progression {sequence.title}",
+                    description=f"Progression de {student.first_name} {student.last_name} sur {sequence.title}",
+                    user=student,
+                    sequences=[sequence]  # Utiliser sequences au pluriel
+                )
+                db.add(progression)
+        
+        db.commit()
+        
         logger.info("Peuplement de la base de données terminé avec succès !")
 
     except Exception as e:
-        logger.error(f"Erreur lors du peuplement de la base de données: {e}", exc_info=True) # Ajout trace
+        logger.error(f"Erreur lors du peuplement de la base de données: {e}", exc_info=True)
         db.rollback()
     finally:
         db.close()
 
 if __name__ == "__main__":
-    # Assurer que les tables existent (au cas où)
     logger.info("Vérification/Création des tables...")
     try:
         Base.metadata.create_all(bind=engine)
