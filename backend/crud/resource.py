@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 from models import Resource, Session, User # Import Resource model, Session for checking session_id and User for checking user_id
-from schemas.resource import ResourceCreate, ResourceUpdate # Import schemas
+from schemas.resource import ResourceCreate, ResourceUpdate, ResourceResponse # Import schemas
 from sqlalchemy import or_
 import logging
 logger = logging.getLogger(__name__)
@@ -43,39 +43,35 @@ def get_resources_by_session(db: Session, session_id: int, skip: int = 0, limit:
         logger.info(f"Recherche des ressources pour la session {session_id}")
         
         # Récupérer d'abord les IDs des ressources liées à la session
-        resource_ids = db.query(session_resource_association.c.resource_id).\
-            filter(session_resource_association.c.session_id == session_id).\
-            all()
+        resource_ids_query = db.query(session_resource_association.c.resource_id).\
+            filter(session_resource_association.c.session_id == session_id)
             
-        # Convertir les résultats en liste d'IDs
-        resource_ids = [id[0] for id in resource_ids]
+        # Appliquer skip et limit sur les IDs pour la pagination correcte
+        resource_ids = [id[0] for id in resource_ids_query.offset(skip).limit(limit).all()]
         
-        # Récupérer les ressources avec leurs relations
-        resources = db.query(Resource).\
-            filter(Resource.id.in_(resource_ids)).\
-            offset(skip).limit(limit).all()
+        if not resource_ids:
+             logger.info(f"Aucun ID de ressource trouvé pour la session {session_id} avec skip={skip}, limit={limit}")
+             return [] # Retourner une liste vide si aucun ID trouvé après pagination
         
-        logger.info(f"Trouvé {len(resources)} ressources pour la session {session_id}")
+        # Récupérer les ressources avec leurs relations (type, sub_type, sessions)
+        # Utiliser options pour charger explicitement les relations nécessaires
+        from sqlalchemy.orm import joinedload
+        resources = db.query(Resource).options(
+                joinedload(Resource.type),
+                joinedload(Resource.sub_type),
+                joinedload(Resource.sessions)
+            ).filter(Resource.id.in_(resource_ids)).all()
         
-        # Convertir les objets SQLAlchemy en dictionnaires
-        resources_data = []
-        for resource in resources:
-            resource_data = {
-                "id": resource.id,
-                "title": resource.title,
-                "description": resource.description,
-                "type_id": resource.type_id,  
-                "content": resource.content,
-                "user_id": resource.user_id,
-                "session_ids": [session.id for session in resource.sessions]
-            }
-            resources_data.append(resource_data)
+        logger.info(f"Trouvé {len(resources)} ressources pour les IDs {resource_ids}")
+        
+        # Convertir les objets SQLAlchemy en utilisant la méthode de classe du schéma
+        resources_data = [ResourceResponse.from_resource(resource, db) for resource in resources]
         
         return resources_data
         
     except Exception as e:
         logger.error(f"Erreur lors de la recherche des ressources pour la session {session_id}: {str(e)}")
-        raise
+        raise # Relever l'exception pour que FastAPI retourne une erreur 500
 
 def get_resources_standalone(db: Session, skip: int = 0, limit: int = 100):
     """Récupère les ressources qui ne sont liées à aucune session."""
